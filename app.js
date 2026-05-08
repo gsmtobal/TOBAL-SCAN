@@ -14,7 +14,13 @@ async function fetchCards() {
             const data = await res.json();
             // Firebase returns an object of objects { "code": { ... }, "code2": { ... } }
             if (data) {
-                mockCards = Object.values(data);
+                let allCards = Object.values(data);
+                // Filter: If not Admin, only show own cards
+                if (currentUser && currentUser.toLowerCase() !== 'admin') {
+                    mockCards = allCards.filter(c => c.agent && c.agent.toLowerCase() === currentUser.toLowerCase());
+                } else {
+                    mockCards = allCards;
+                }
                 // Sort by date descending
                 mockCards.sort((a, b) => new Date(b.date) - new Date(a.date));
             } else {
@@ -101,9 +107,16 @@ loginForm.addEventListener('submit', (e) => {
         currentUser = agent ? agent.name : 'Admin';
         loggedUserEl.textContent = currentUser;
         localStorage.setItem('loggedUser', currentUser); // Persistent login
+        
+        // UI Access Control: Hide Admin-only tabs for Agents
+        const isAdmin = currentUser.toLowerCase() === 'admin';
+        document.querySelectorAll('.nav-links li[data-target="agents-view"], .nav-links li[data-target="settings-view"]').forEach(li => {
+            li.style.display = isAdmin ? 'flex' : 'none';
+        });
+
         loginScreen.classList.remove('active');
         dashboardScreen.classList.add('active');
-        renderFolders();
+        fetchCards(); // Refetch to apply agent filter
         renderAgents();
     } else {
         loginError.textContent = "Identifiants incorrects.";
@@ -153,6 +166,8 @@ function renderFolders(filterText = '') {
     folderList.forEach(folder => {
         const div = document.createElement('div');
         div.className = 'folder-card';
+        const isAdmin = currentUser && currentUser.toLowerCase() === 'admin';
+        
         div.innerHTML = `
             <div class="btn-folder-download-group">
                 <button class="btn-folder-download csv" title="CSV" data-folder="${folder.name}">
@@ -161,9 +176,10 @@ function renderFolders(filterText = '') {
                 <button class="btn-folder-download txt" title="TXT" data-folder="${folder.name}">
                     <ion-icon name="document-text-outline"></ion-icon>
                 </button>
+                ${isAdmin ? `
                 <button class="btn-folder-download delete" title="Supprimer Dossier" style="background: rgba(255, 59, 48, 0.1); color: #FF3B30;">
                     <ion-icon name="trash-outline"></ion-icon>
-                </button>
+                </button>` : ''}
             </div>
             <div class="folder-icon"><ion-icon name="folder"></ion-icon></div>
             <div class="folder-info">
@@ -177,7 +193,9 @@ function renderFolders(filterText = '') {
         });
         div.querySelector('.btn-folder-download.csv').addEventListener('click', () => exportFolderToCsv(folder.name));
         div.querySelector('.btn-folder-download.txt').addEventListener('click', () => exportFolderToTxt(folder.name));
-        div.querySelector('.btn-folder-download.delete').addEventListener('click', () => deleteFolder(folder.name));
+        if (isAdmin) {
+            div.querySelector('.btn-folder-download.delete').addEventListener('click', () => deleteFolder(folder.name));
+        }
         foldersGrid.appendChild(div);
     });
 }
@@ -202,6 +220,8 @@ function renderFolderCards(folderName) {
         const imgSource = card.imageBase64 || '';
         const imgHtml = imgSource ? `<img src="${imgSource}" class="card-thumbnail" onclick="openImageModal('${imgSource}')">` : '<div class="card-thumbnail" style="display:flex;align-items:center;justify-content:center;color:gray;"><ion-icon name="image-outline"></ion-icon></div>';
         
+        const isAdmin = currentUser && currentUser.toLowerCase() === 'admin';
+
         tr.innerHTML = `
             <td>${imgHtml}</td>
             <td><strong>${card.code}</strong></td>
@@ -210,9 +230,10 @@ function renderFolderCards(folderName) {
             <td>${card.agent}</td>
             <td>${card.date}</td>
             <td style="text-align: right;">
+                ${isAdmin ? `
                 <button class="btn-delete-card" onclick="deleteCard('${card.code}')" title="Supprimer">
                     <ion-icon name="trash-outline"></ion-icon>
-                </button>
+                </button>` : ''}
             </td>
         `;
         cardsTbody.appendChild(tr);
@@ -426,7 +447,13 @@ imageModal.addEventListener('click', (e) => {
 console.log("Checking session:", { currentUser, firebaseDbUrl });
 if (currentUser && firebaseDbUrl) {
     loggedUserEl.textContent = currentUser;
+    
+    // UI Access Control
+    const isAdmin = currentUser.toLowerCase() === 'admin';
+    document.querySelectorAll('.nav-links li[data-target="agents-view"], .nav-links li[data-target="settings-view"]').forEach(li => {
+        li.style.display = isAdmin ? 'flex' : 'none';
+    });
+
     loginScreen.classList.remove('active');
     dashboardScreen.classList.add('active');
-    // Data is already being fetched by fetchCards/fetchAgents above
 }
