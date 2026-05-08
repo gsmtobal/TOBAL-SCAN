@@ -1,8 +1,10 @@
-// Data from Backend
+// Firebase Configuration
+const DEFAULT_FIREBASE_URL = "https://tobal-scan-default-rtdb.firebaseio.com/"; // <--- REPLACE WITH YOUR REAL FIREBASE URL
+
 let mockCards = [];
 let mockAgents = [];
 let currentUser = localStorage.getItem('loggedUser') || null;
-let firebaseDbUrl = localStorage.getItem('firebaseUrl') || '';
+let firebaseDbUrl = localStorage.getItem('firebaseUrl') || DEFAULT_FIREBASE_URL;
 
 // Fetch Data from Firebase
 async function fetchCards() {
@@ -78,20 +80,14 @@ const loggedUserEl = document.getElementById('logged-user');
 const imageModal = document.getElementById('image-modal');
 const enlargedImage = document.getElementById('enlarged-image');
 const closeImageModalBtn = document.getElementById('close-image-modal');
-const scannerVideo = document.getElementById('scanner-video');
-const cameraSelect = document.getElementById('camera-select');
-const startScannerBtn = document.getElementById('start-scanner-btn');
-const scannerFeedback = document.getElementById('scanner-feedback');
-const scanHistoryEl = document.getElementById('scan-history');
+const mainSearchInput = document.getElementById('main-search-input');
+const searchResultsContainer = document.getElementById('search-results-container');
 
 let currentFolder = null;
-let scannerStream = null;
-let isScanning = false;
-let tesseractWorker = null;
 
 // Set default URL if exists
-if (firebaseDbUrl) {
-    document.getElementById('firebase-url').value = firebaseDbUrl;
+if (!firebaseDbUrl) {
+    firebaseDbUrl = DEFAULT_FIREBASE_URL;
 }
 
 // Login Logic
@@ -99,10 +95,10 @@ loginForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const username = document.getElementById('username').value.trim();
     const password = document.getElementById('password').value.trim();
-    const dbUrl = document.getElementById('firebase-url').value.trim();
 
-    firebaseDbUrl = dbUrl;
-    localStorage.setItem('firebaseUrl', dbUrl);
+    // Use default URL if not set
+    if (!firebaseDbUrl) firebaseDbUrl = DEFAULT_FIREBASE_URL;
+    localStorage.setItem('firebaseUrl', firebaseDbUrl);
 
     // If no agents loaded yet (first login), allow admin/admin
     if (mockAgents.length === 0) {
@@ -453,7 +449,8 @@ imageModal.addEventListener('click', (e) => {
 
 // Auto-Login Check (Moved to end for stability)
 console.log("Checking session:", { currentUser, firebaseDbUrl });
-if (currentUser && firebaseDbUrl) {
+if (currentUser) {
+    if (!firebaseDbUrl) firebaseDbUrl = DEFAULT_FIREBASE_URL;
     loggedUserEl.textContent = currentUser;
     
     // UI Access Control
@@ -466,136 +463,77 @@ if (currentUser && firebaseDbUrl) {
     dashboardScreen.classList.add('active');
 }
 
-// --- Web Scanner Logic ---
-async function initScanner() {
-    // Fill camera select
-    const devices = await navigator.mediaDevices.enumerateDevices();
-    const videoDevices = devices.filter(d => d.kind === 'videoinput');
-    cameraSelect.innerHTML = videoDevices.map(d => `<option value="${d.deviceId}">${d.label || 'Camera '+videoDevices.indexOf(d)}</option>`).join('');
+// --- Enhanced Search Logic ---
+mainSearchInput.addEventListener('input', (e) => {
+    const q = e.target.value.trim();
+    if (q.length < 3) {
+        searchResultsContainer.innerHTML = '';
+        return;
+    }
     
-    // Init Tesseract
-    if (!tesseractWorker) {
-        tesseractWorker = await Tesseract.createWorker('eng');
-        await tesseractWorker.setParameters({
-            tessedit_char_whitelist: '0123456789',
-        });
-    }
-}
-
-startScannerBtn.addEventListener('click', async () => {
-    if (isScanning) {
-        stopScanner();
-    } else {
-        startScanner();
-    }
+    const results = mockCards.filter(c => c.code.includes(q));
+    renderSearchResults(results);
 });
 
-async function startScanner() {
-    const deviceId = cameraSelect.value;
-    try {
-        scannerStream = await navigator.mediaDevices.getUserMedia({
-            video: { deviceId: { exact: deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } }
-        });
-        scannerVideo.srcObject = scannerStream;
-        isScanning = true;
-        startScannerBtn.innerHTML = '<ion-icon name="stop-outline"></ion-icon> Arrêter';
-        startScannerBtn.style.background = 'var(--error)';
-        scannerFeedback.textContent = "Analyse en cours...";
-        scanLoop();
-    } catch (e) {
-        console.error(e);
-        alert("Impossible d'accéder à la caméra.");
+function renderSearchResults(results) {
+    if (results.length === 0) {
+        searchResultsContainer.innerHTML = '<p style="text-align:center; color:gray; margin-top:20px;">Aucune carte trouvée.</p>';
+        return;
     }
+
+    searchResultsContainer.innerHTML = results.map(card => `
+        <div class="search-result-card">
+            <div class="result-img-side">
+                ${card.imageBase64 ? `<img src="${card.imageBase64}">` : '<div style="width:250px; height:150px; background:#111; border-radius:15px; display:flex; align-items:center; justify-content:center; color:gray;">Pas d\'image</div>'}
+            </div>
+            <div class="result-info-side">
+                <h2>Code: ${card.code}</h2>
+                <div class="edit-row">
+                    <div class="edit-group">
+                        <label>Opérateur</label>
+                        <select id="edit-brand-${card.code}">
+                            <option value="MOBILIS" ${card.brand === 'MOBILIS' ? 'selected' : ''}>MOBILIS</option>
+                            <option value="DJEZZY" ${card.brand === 'DJEZZY' ? 'selected' : ''}>DJEZZY</option>
+                            <option value="OOREDOO" ${card.brand === 'OOREDOO' ? 'selected' : ''}>OOREDOO</option>
+                            <option value="IDOOM" ${card.brand === 'IDOOM' ? 'selected' : ''}>IDOOM</option>
+                        </select>
+                    </div>
+                    <div class="edit-group">
+                        <label>Montant (DA)</label>
+                        <input type="number" id="edit-amount-${card.code}" value="${card.amount}">
+                    </div>
+                </div>
+                <p style="font-size:0.8rem; color:gray; margin-bottom:15px;">Dossier: ${card.packet} • Agent: ${card.agent}</p>
+                <button class="btn-save-search" onclick="saveSearchEdit('${card.code}')">
+                    <ion-icon name="save-outline"></ion-icon> ENREGISTRER LES MODIFICATIONS
+                </button>
+            </div>
+        </div>
+    `).join('<hr style="border:0; border-top:1px solid #222; margin:20px 0;">');
 }
 
-function stopScanner() {
-    if (scannerStream) {
-        scannerStream.getTracks().forEach(track => track.stop());
-    }
-    isScanning = false;
-    startScannerBtn.innerHTML = '<ion-icon name="play-outline"></ion-icon> Démarrer';
-    startScannerBtn.style.background = 'var(--primary)';
-    scannerFeedback.textContent = "Scanner arrêté.";
-}
-
-async function scanLoop() {
-    if (!isScanning) return;
-
-    // Use a canvas to capture current frame
-    const canvas = document.createElement('canvas');
-    canvas.width = scannerVideo.videoWidth;
-    canvas.height = scannerVideo.videoHeight;
-    const ctx = canvas.getContext('2d');
+async function saveSearchEdit(code) {
+    const brand = document.getElementById(`edit-brand-${code}`).value;
+    const amount = document.getElementById(`edit-amount-${code}`).value;
     
-    // Only crop the middle part (matching overlay)
-    const cw = canvas.width * 0.8;
-    const ch = canvas.height * 0.3;
-    const cx = (canvas.width - cw) / 2;
-    const cy = (canvas.height - ch) / 2;
+    const cardIdx = mockCards.findIndex(c => c.code === code);
+    if (cardIdx === -1) return;
 
-    ctx.drawImage(scannerVideo, cx, cy, cw, ch, 0, 0, canvas.width, canvas.height);
-
-    try {
-        const { data: { text } } = await tesseractWorker.recognize(canvas);
-        const codes = text.match(/\b\d{15}\b/g); // Match 15 digits
-        
-        if (codes && codes.length > 0) {
-            const code = codes[0];
-            processFoundCode(code);
-        }
-    } catch (e) { console.error(e); }
-
-    if (isScanning) setTimeout(scanLoop, 500); // Scan every 500ms
-}
-
-async function processFoundCode(code) {
-    // Check if already in current list
-    if (mockCards.some(c => c.code === code)) return;
+    const updatedCard = { ...mockCards[cardIdx], brand, amount };
     
-    scannerFeedback.textContent = `CODE TROUVÉ: ${code}`;
-    scannerFeedback.style.color = '#fff';
-    scannerFeedback.style.background = 'var(--primary)';
-    
-    // Submit to Firebase
+    // Update Firebase
     if (firebaseDbUrl) {
         const url = firebaseDbUrl.endsWith('/') ? firebaseDbUrl.slice(0, -1) : firebaseDbUrl;
-        const newRecord = {
-            code: code,
-            brand: "MOBILIS", // Default or auto-detect
-            amount: "0",
-            packet: "WebScan_" + new Date().toLocaleDateString().replace(/\//g, '-'),
-            agent: currentUser || 'WebAdmin',
-            date: new Date().toLocaleString()
-        };
-
-        const res = await fetch(`${url}/records/${code}.json`, {
-            method: 'PUT',
-            body: JSON.stringify(newRecord)
+        await fetch(`${url}/records/${code}.json`, {
+            method: 'PATCH',
+            body: JSON.stringify({ brand, amount })
         });
-
-        if (res.ok) {
-            mockCards.unshift(newRecord);
-            addToScanHistory(code);
-            // Refresh folder view if active
-            renderFolders();
-        }
+        
+        mockCards[cardIdx] = updatedCard;
+        alert("Modifications enregistrées !");
+        renderFolders();
     }
-
-    setTimeout(() => {
-        scannerFeedback.textContent = "Analyse en cours...";
-        scannerFeedback.style.color = 'var(--primary)';
-        scannerFeedback.style.background = 'rgba(0,0,0,0.8)';
-    }, 2000);
 }
 
-function addToScanHistory(code) {
-    const li = document.createElement('li');
-    li.className = 'scan-item';
-    li.innerHTML = `<span class="code">${code}</span> <span class="time">${new Date().toLocaleTimeString()}</span>`;
-    scanHistoryEl.prepend(li);
-}
-
-// Sidebar Web Scanner click
-document.querySelector('.nav-links li[data-target="web-scanner-view"]').addEventListener('click', () => {
-    initScanner();
-});
+// Global Exports
+window.saveSearchEdit = saveSearchEdit;

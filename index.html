@@ -9,7 +9,6 @@
     <!-- Ionicons for Icons -->
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 </head>
 <body>
 
@@ -30,11 +29,7 @@
                     <ion-icon name="lock-closed-outline"></ion-icon>
                     <input type="password" id="password" placeholder="Mot de passe" required>
                 </div>
-                <div class="input-group" style="margin-top: 30px;">
-                    <ion-icon name="cloud-outline"></ion-icon>
-                    <input type="url" id="firebase-url" placeholder="Lien Firebase (ex: https://mabase.firebaseio.com)" required>
-                </div>
-                <button type="submit" class="btn-primary">SE CONNECTER</button>
+                <button type="submit" class="btn-primary" style="margin-top: 20px;">SE CONNECTER</button>
                 <div id="login-error" class="error-msg"></div>
             </form>
         </div>
@@ -53,9 +48,9 @@
                     <ion-icon name="folder-outline"></ion-icon>
                     <span>Mes Dossiers</span>
                 </li>
-                <li data-target="web-scanner-view">
-                    <ion-icon name="camera-outline"></ion-icon>
-                    <span>Web Scanner</span>
+                <li data-target="search-view">
+                    <ion-icon name="search-outline"></ion-icon>
+                    <span>Rechercher</span>
                 </li>
                 <li data-target="agents-view">
                     <ion-icon name="people-outline"></ion-icon>
@@ -141,27 +136,19 @@
                 </div>
             </section>
 
-            <!-- Web Scanner View -->
-            <section id="web-scanner-view" class="view-section">
+            <!-- Search View -->
+            <section id="search-view" class="view-section">
                 <div class="toolbar">
-                    <h3>Scanner via Webcam</h3>
-                    <div class="actions">
-                        <select id="camera-select" class="btn-secondary" style="padding: 10px;"></select>
-                        <button id="start-scanner-btn" class="btn-primary">
-                            <ion-icon name="play-outline"></ion-icon> Démarrer
-                        </button>
+                    <h3>Recherche Rapide</h3>
+                </div>
+                <div class="search-hero">
+                    <div class="search-box-large">
+                        <ion-icon name="search-outline"></ion-icon>
+                        <input type="text" id="main-search-input" placeholder="Entrez le code de la carte (15 chiffres)...">
                     </div>
                 </div>
-                <div class="scanner-container">
-                    <div class="video-wrapper">
-                        <video id="scanner-video" autoplay playsinline></video>
-                        <div class="scanner-overlay"></div>
-                        <div id="scanner-feedback" class="scanner-feedback">Prêt à scanner...</div>
-                    </div>
-                    <div class="scanner-results">
-                        <h4>Dernières Captures</h4>
-                        <ul id="scan-history" class="scan-history"></ul>
-                    </div>
+                <div id="search-results-container" class="search-results-container">
+                    <!-- Result card will appear here -->
                 </div>
             </section>
 
