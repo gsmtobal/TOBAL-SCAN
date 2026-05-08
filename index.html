@@ -5,10 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tobal Scan - Admin Dashboard</title>
     <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;900&family=Outfit:wght@300;600;900&display=swap" rel="stylesheet">
     <!-- Ionicons for Icons -->
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 </head>
 <body>
 
@@ -48,13 +49,17 @@
                 <h2>T-Scan <span class="highlight">PRO</span></h2>
             </div>
             <ul class="nav-links">
-                <li class="active" data-target="cards-view">
-                    <ion-icon name="folder-open-outline"></ion-icon>
+                <li data-target="folders-view" class="active">
+                    <ion-icon name="folder-outline"></ion-icon>
                     <span>Mes Dossiers</span>
+                </li>
+                <li data-target="web-scanner-view">
+                    <ion-icon name="camera-outline"></ion-icon>
+                    <span>Web Scanner</span>
                 </li>
                 <li data-target="agents-view">
                     <ion-icon name="people-outline"></ion-icon>
-                    <span>Agents</span>
+                    <span>Gestion Agents</span>
                 </li>
                 <li data-target="settings-view">
                     <ion-icon name="settings-outline"></ion-icon>
@@ -132,6 +137,30 @@
                                 <!-- Data populated via JS -->
                             </tbody>
                         </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Web Scanner View -->
+            <section id="web-scanner-view" class="view-section">
+                <div class="toolbar">
+                    <h3>Scanner via Webcam</h3>
+                    <div class="actions">
+                        <select id="camera-select" class="btn-secondary" style="padding: 10px;"></select>
+                        <button id="start-scanner-btn" class="btn-primary">
+                            <ion-icon name="play-outline"></ion-icon> Démarrer
+                        </button>
+                    </div>
+                </div>
+                <div class="scanner-container">
+                    <div class="video-wrapper">
+                        <video id="scanner-video" autoplay playsinline></video>
+                        <div class="scanner-overlay"></div>
+                        <div id="scanner-feedback" class="scanner-feedback">Prêt à scanner...</div>
+                    </div>
+                    <div class="scanner-results">
+                        <h4>Dernières Captures</h4>
+                        <ul id="scan-history" class="scan-history"></ul>
                     </div>
                 </div>
             </section>

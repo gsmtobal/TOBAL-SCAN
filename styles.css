@@ -481,6 +481,88 @@ tbody tr:hover {
     letter-spacing: 2px;
 }
 
+/* Web Scanner Styles */
+.scanner-container {
+    display: flex;
+    gap: 20px;
+    margin-top: 10px;
+}
+.video-wrapper {
+    flex: 2;
+    position: relative;
+    background: #000;
+    border-radius: 25px;
+    overflow: hidden;
+    border: 2px solid var(--border-color);
+    aspect-ratio: 16/9;
+}
+#scanner-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.scanner-overlay {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80%; height: 30%;
+    border: 2px solid var(--primary);
+    box-shadow: 0 0 0 9999px rgba(0,0,0,0.5);
+    border-radius: 10px;
+    pointer-events: none;
+}
+.scanner-overlay::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 2px;
+    background: var(--primary);
+    box-shadow: 0 0 15px var(--primary);
+    animation: scan-pulse 2s infinite;
+}
+@keyframes scan-pulse {
+    0% { top: 0; }
+    50% { top: 100%; }
+    100% { top: 0; }
+}
+.scanner-feedback {
+    position: absolute;
+    bottom: 20px; left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.8);
+    padding: 10px 20px;
+    border-radius: 30px;
+    color: var(--primary);
+    font-weight: bold;
+    z-index: 5;
+}
+.scanner-results {
+    flex: 1;
+    background: var(--card-bg);
+    border-radius: 25px;
+    padding: 20px;
+    border: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+}
+.scan-history {
+    list-style: none;
+    margin-top: 15px;
+    overflow-y: auto;
+    max-height: 400px;
+}
+.scan-item {
+    background: rgba(255,255,255,0.03);
+    padding: 12px;
+    border-radius: 12px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid var(--border-color);
+}
+.scan-item .code { font-weight: bold; color: var(--primary); }
+.scan-item .time { font-size: 0.75rem; color: var(--text-muted); }
+
 /* Modal */
 .modal {
     display: none;
