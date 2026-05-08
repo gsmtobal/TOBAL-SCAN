@@ -65,6 +65,7 @@ const agentModal = document.getElementById('agent-modal');
 const closeModalBtn = document.querySelector('.close-modal');
 const agentForm = document.getElementById('agent-form');
 const exportFolderCsvBtn = document.getElementById('export-folder-csv');
+const exportFolderTxtBtn = document.getElementById('export-folder-txt');
 const settingsForm = document.getElementById('settings-form');
 const settingsMsg = document.getElementById('settings-msg');
 const loggedUserEl = document.getElementById('logged-user');
@@ -148,9 +149,14 @@ function renderFolders(filterText = '') {
         const div = document.createElement('div');
         div.className = 'folder-card';
         div.innerHTML = `
-            <button class="btn-folder-download" title="Télécharger Dossier" data-folder="${folder.name}">
-                <ion-icon name="download-outline"></ion-icon>
-            </button>
+            <div class="btn-folder-download-group">
+                <button class="btn-folder-download csv" title="CSV" data-folder="${folder.name}">
+                    <ion-icon name="download-outline"></ion-icon>
+                </button>
+                <button class="btn-folder-download txt" title="TXT" data-folder="${folder.name}">
+                    <ion-icon name="document-text-outline"></ion-icon>
+                </button>
+            </div>
             <div class="folder-icon"><ion-icon name="folder"></ion-icon></div>
             <div class="folder-info">
                 <h4>${folder.name}</h4>
@@ -161,7 +167,8 @@ function renderFolders(filterText = '') {
             if (e.target.closest('.btn-folder-download')) return;
             showFolderDetail(folder.name);
         });
-        div.querySelector('.btn-folder-download').addEventListener('click', () => exportFolderToCsv(folder.name));
+        div.querySelector('.btn-folder-download.csv').addEventListener('click', () => exportFolderToCsv(folder.name));
+        div.querySelector('.btn-folder-download.txt').addEventListener('click', () => exportFolderToTxt(folder.name));
         foldersGrid.appendChild(div);
     });
 }
@@ -220,8 +227,26 @@ function exportFolderToCsv(folderName) {
     link.click();
 }
 
+function exportFolderToTxt(folderName) {
+    const filtered = mockCards.filter(c => c.packet === folderName);
+    let txtContent = "data:text/plain;charset=utf-8,";
+    filtered.forEach(row => {
+        txtContent += `${row.code}\n`;
+    });
+    const encodedUri = encodeURI(txtContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `TobalScan_${folderName}.txt`);
+    document.body.appendChild(link);
+    link.click();
+}
+
 exportFolderCsvBtn.addEventListener('click', () => {
     if (currentFolder) exportFolderToCsv(currentFolder);
+});
+
+exportFolderTxtBtn.addEventListener('click', () => {
+    if (currentFolder) exportFolderToTxt(currentFolder);
 });
 
 // Profile Settings Logic
