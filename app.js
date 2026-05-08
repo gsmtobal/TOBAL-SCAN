@@ -69,6 +69,9 @@ const exportFolderTxtBtn = document.getElementById('export-folder-txt');
 const settingsForm = document.getElementById('settings-form');
 const settingsMsg = document.getElementById('settings-msg');
 const loggedUserEl = document.getElementById('logged-user');
+const imageModal = document.getElementById('image-modal');
+const enlargedImage = document.getElementById('enlarged-image');
+const closeImageModalBtn = document.getElementById('close-image-modal');
 
 let currentFolder = null;
 
@@ -197,7 +200,7 @@ function renderFolderCards(folderName) {
         
         // Show real card image from cloud
         const imgSource = card.imageBase64 || '';
-        const imgHtml = imgSource ? `<img src="${imgSource}" class="card-thumbnail" onclick="window.open('${imgSource}')">` : '<div class="card-thumbnail" style="display:flex;align-items:center;justify-content:center;color:gray;"><ion-icon name="image-outline"></ion-icon></div>';
+        const imgHtml = imgSource ? `<img src="${imgSource}" class="card-thumbnail" onclick="openImageModal('${imgSource}')">` : '<div class="card-thumbnail" style="display:flex;align-items:center;justify-content:center;color:gray;"><ion-icon name="image-outline"></ion-icon></div>';
         
         tr.innerHTML = `
             <td>${imgHtml}</td>
@@ -401,6 +404,23 @@ document.getElementById('refresh-btn').addEventListener('click', () => {
 // Initial Render (Hidden until login, but we fetch to have them ready)
 fetchCards();
 fetchAgents();
+
+// --- Image Lightbox Logic ---
+function openImageModal(src) {
+    enlargedImage.src = src;
+    imageModal.classList.add('active');
+}
+
+closeImageModalBtn.addEventListener('click', () => {
+    imageModal.classList.remove('active');
+});
+
+// Close modal when clicking outside the image
+imageModal.addEventListener('click', (e) => {
+    if (e.target === imageModal) {
+        imageModal.classList.remove('active');
+    }
+});
 
 // Auto-Login Check (Moved to end for stability)
 console.log("Checking session:", { currentUser, firebaseDbUrl });
