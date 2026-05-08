@@ -1,7 +1,7 @@
 // Data from Backend
 let mockCards = [];
 let mockAgents = [];
-let currentUser = null;
+let currentUser = localStorage.getItem('loggedUser') || null;
 let firebaseDbUrl = localStorage.getItem('firebaseUrl') || '';
 
 // Fetch Data from Firebase
@@ -97,6 +97,7 @@ loginForm.addEventListener('submit', (e) => {
     if (agent || (username === 'admin' && password === 'admin')) {
         currentUser = agent ? agent.name : 'Admin';
         loggedUserEl.textContent = currentUser;
+        localStorage.setItem('loggedUser', currentUser); // Persistent login
         loginScreen.classList.remove('active');
         dashboardScreen.classList.add('active');
         renderFolders();
@@ -106,9 +107,19 @@ loginForm.addEventListener('submit', (e) => {
     }
 });
 
+// Auto-Login Check
+if (currentUser && firebaseDbUrl) {
+    loggedUserEl.textContent = currentUser;
+    loginScreen.classList.remove('active');
+    dashboardScreen.classList.add('active');
+    fetchCards();
+    fetchAgents();
+}
+
 // Logout Logic
 logoutBtn.addEventListener('click', () => {
     currentUser = null;
+    localStorage.removeItem('loggedUser'); // Clear session
     dashboardScreen.classList.remove('active');
     loginScreen.classList.add('active');
     document.getElementById('password').value = '';
