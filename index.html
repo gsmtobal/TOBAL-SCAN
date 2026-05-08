@@ -49,12 +49,16 @@
             </div>
             <ul class="nav-links">
                 <li class="active" data-target="cards-view">
-                    <ion-icon name="albums-outline"></ion-icon>
-                    <span>Mes Fichiers</span>
+                    <ion-icon name="folder-open-outline"></ion-icon>
+                    <span>Mes Dossiers</span>
                 </li>
                 <li data-target="agents-view">
                     <ion-icon name="people-outline"></ion-icon>
                     <span>Agents</span>
+                </li>
+                <li data-target="settings-view">
+                    <ion-icon name="settings-outline"></ion-icon>
+                    <span>Paramètres</span>
                 </li>
                 <li id="logout-btn">
                     <ion-icon name="log-out-outline"></ion-icon>
@@ -82,39 +86,50 @@
                 </div>
             </header>
 
-            <!-- Cards View -->
+            <!-- Folders View (Default) -->
             <section id="cards-view" class="view-section active">
-                <div class="toolbar">
-                    <div class="search-box">
-                        <ion-icon name="search-outline"></ion-icon>
-                        <input type="text" id="search-input" placeholder="Rechercher par fichier ou code...">
+                <div id="folders-container">
+                    <div class="toolbar">
+                        <div class="search-box">
+                            <ion-icon name="search-outline"></ion-icon>
+                            <input type="text" id="folder-search" placeholder="Rechercher un dossier...">
+                        </div>
                     </div>
-                    <div class="actions">
-                        <button class="btn-export" id="export-csv-btn">
-                            <ion-icon name="download-outline"></ion-icon> Export CSV
-                        </button>
-                        <button class="btn-export" id="export-txt-btn">
-                            <ion-icon name="document-text-outline"></ion-icon> Export TXT
-                        </button>
+                    <div class="folders-grid" id="folders-grid">
+                        <!-- Folders populated via JS -->
                     </div>
                 </div>
 
-                <div class="table-container">
-                    <table id="cards-table">
-                        <thead>
-                            <tr>
-                                <th>Code (15 chiffres)</th>
-                                <th>Opérateur</th>
-                                <th>Montant</th>
-                                <th>Fichier</th>
-                                <th>Agent</th>
-                                <th>Date</th>
-                            </tr>
-                        </thead>
-                        <tbody id="cards-tbody">
-                            <!-- Data populated via JS -->
-                        </tbody>
-                    </table>
+                <div id="folder-detail-view" style="display: none;">
+                    <div class="toolbar">
+                        <button class="btn-secondary" id="back-to-folders">
+                            <ion-icon name="arrow-back-outline"></ion-icon> Retour
+                        </button>
+                        <h3 id="current-folder-name" class="highlight">Dossier: ---</h3>
+                        <div class="actions">
+                            <button class="btn-export" id="export-folder-csv">
+                                <ion-icon name="download-outline"></ion-icon> CSV
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="table-container">
+                        <table id="cards-table">
+                            <thead>
+                                <tr>
+                                    <th>Image</th>
+                                    <th>Code (15 chiffres)</th>
+                                    <th>Opérateur</th>
+                                    <th>Montant</th>
+                                    <th>Agent</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cards-tbody">
+                                <!-- Data populated via JS -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </section>
 
@@ -129,6 +144,27 @@
                 
                 <div class="cards-grid" id="agents-grid">
                     <!-- Agent cards populated via JS -->
+                </div>
+            </section>
+
+            <!-- Settings View -->
+            <section id="settings-view" class="view-section">
+                <div class="toolbar">
+                    <h3>Paramètres du Profil</h3>
+                </div>
+                <div class="login-card" style="max-width: 500px; margin: 0 auto;">
+                    <form id="settings-form">
+                        <div class="input-group">
+                            <ion-icon name="person-outline"></ion-icon>
+                            <input type="text" id="new-username" placeholder="Nouveau Nom d'utilisateur">
+                        </div>
+                        <div class="input-group">
+                            <ion-icon name="lock-closed-outline"></ion-icon>
+                            <input type="password" id="new-password" placeholder="Nouveau Mot de passe">
+                        </div>
+                        <button type="submit" class="btn-primary">METTRE À JOUR LE PROFIL</button>
+                        <p id="settings-msg" style="margin-top: 15px; font-size: 0.9rem;"></p>
+                    </form>
                 </div>
             </section>
 

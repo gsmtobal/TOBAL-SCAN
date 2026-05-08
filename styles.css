@@ -345,6 +345,77 @@ tbody tr:hover {
 .badge.idoom { background: rgba(90, 200, 250, 0.1); color: #5AC8FA; }
 .badge.default { background: rgba(255, 255, 255, 0.1); color: white; }
 
+/* Folders Grid */
+.folders-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.folder-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    padding: 20px;
+    cursor: pointer;
+    transition: 0.3s;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    position: relative;
+    overflow: hidden;
+}
+.folder-card:hover {
+    border-color: var(--primary);
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0, 200, 83, 0.1);
+}
+.folder-icon {
+    font-size: 3rem;
+    color: var(--primary);
+    margin-bottom: 5px;
+}
+.folder-info h4 {
+    font-size: 1.1rem;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+.folder-stats {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+.btn-folder-download {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: rgba(255, 255, 255, 0.05);
+    border: none;
+    color: var(--text-muted);
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: 0.3s;
+}
+.btn-folder-download:hover {
+    background: var(--primary);
+    color: white;
+}
+
+/* Thumbnails */
+.card-thumbnail {
+    width: 80px;
+    height: 50px;
+    border-radius: 8px;
+    background: #000;
+    object-fit: cover;
+    border: 1px solid var(--border-color);
+    cursor: zoom-in;
+}
+
 /* Agents Grid */
 .cards-grid {
     display: grid;

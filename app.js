@@ -20,7 +20,7 @@ async function fetchCards() {
             } else {
                 mockCards = [];
             }
-            renderCards();
+            renderFolders();
         }
     } catch (e) { console.error("Error fetching cards:", e); }
 }
@@ -53,15 +53,23 @@ const viewSections = document.querySelectorAll('.view-section');
 const logoutBtn = document.getElementById('logout-btn');
 const cardsTbody = document.getElementById('cards-tbody');
 const totalCountEl = document.getElementById('total-count');
-const searchInput = document.getElementById('search-input');
+const folderSearch = document.getElementById('folder-search');
+const foldersGrid = document.getElementById('folders-grid');
+const foldersContainer = document.getElementById('folders-container');
+const folderDetailView = document.getElementById('folder-detail-view');
+const backToFoldersBtn = document.getElementById('back-to-folders');
+const currentFolderNameEl = document.getElementById('current-folder-name');
 const agentsGrid = document.getElementById('agents-grid');
 const addAgentBtn = document.getElementById('add-agent-btn');
 const agentModal = document.getElementById('agent-modal');
 const closeModalBtn = document.querySelector('.close-modal');
 const agentForm = document.getElementById('agent-form');
-const exportCsvBtn = document.getElementById('export-csv-btn');
-const exportTxtBtn = document.getElementById('export-txt-btn');
+const exportFolderCsvBtn = document.getElementById('export-folder-csv');
+const settingsForm = document.getElementById('settings-form');
+const settingsMsg = document.getElementById('settings-msg');
 const loggedUserEl = document.getElementById('logged-user');
+
+let currentFolder = null;
 
 // Set default URL if exists
 if (firebaseDbUrl) {
@@ -89,9 +97,8 @@ loginForm.addEventListener('submit', (e) => {
         currentUser = agent ? agent.name : 'Admin';
         loggedUserEl.textContent = currentUser;
         loginScreen.classList.remove('active');
-        dashboardScreen.classList.active = true;
         dashboardScreen.classList.add('active');
-        renderCards();
+        renderFolders();
         renderAgents();
     } else {
         loginError.textContent = "Identifiants incorrects.";
@@ -120,65 +127,135 @@ navLinks.forEach(link => {
     });
 });
 
-// Render Cards Table
-function renderCards(filterText = '') {
-    cardsTbody.innerHTML = '';
-    
-    const filtered = mockCards.filter(c => {
-        const query = filterText.toLowerCase();
-        return c.code.toLowerCase().includes(query) || 
-               c.packet.toLowerCase().includes(query) || 
-               c.agent.toLowerCase().includes(query);
+// --- Folder Logic ---
+function renderFolders(filterText = '') {
+    foldersGrid.innerHTML = '';
+    foldersContainer.style.display = 'block';
+    folderDetailView.style.display = 'none';
+
+    // Group by packet
+    const folders = {};
+    mockCards.forEach(c => {
+        const p = c.packet || 'Sans Dossier';
+        if (!folders[p]) folders[p] = { name: p, count: 0, lastUpdate: c.date };
+        folders[p].count++;
     });
 
-    totalCountEl.textContent = filtered.length;
+    const folderList = Object.values(folders).filter(f => f.name.toLowerCase().includes(filterText.toLowerCase()));
+    totalCountEl.textContent = mockCards.length;
+
+    folderList.forEach(folder => {
+        const div = document.createElement('div');
+        div.className = 'folder-card';
+        div.innerHTML = `
+            <button class="btn-folder-download" title="Télécharger Dossier" data-folder="${folder.name}">
+                <ion-icon name="download-outline"></ion-icon>
+            </button>
+            <div class="folder-icon"><ion-icon name="folder"></ion-icon></div>
+            <div class="folder-info">
+                <h4>${folder.name}</h4>
+                <div class="folder-stats">${folder.count} codes • ${folder.lastUpdate}</div>
+            </div>
+        `;
+        div.addEventListener('click', (e) => {
+            if (e.target.closest('.btn-folder-download')) return;
+            showFolderDetail(folder.name);
+        });
+        div.querySelector('.btn-folder-download').addEventListener('click', () => exportFolderToCsv(folder.name));
+        foldersGrid.appendChild(div);
+    });
+}
+
+function showFolderDetail(folderName) {
+    currentFolder = folderName;
+    foldersContainer.style.display = 'none';
+    folderDetailView.style.display = 'block';
+    currentFolderNameEl.textContent = `Dossier: ${folderName}`;
+    renderFolderCards(folderName);
+}
+
+function renderFolderCards(folderName) {
+    cardsTbody.innerHTML = '';
+    const filtered = mockCards.filter(c => c.packet === folderName);
 
     filtered.forEach(card => {
         const tr = document.createElement('tr');
         const badgeClass = card.brand ? card.brand.toLowerCase() : 'default';
+        
+        // Show real card image from cloud
+        const imgSource = card.imageBase64 || '';
+        const imgHtml = imgSource ? `<img src="${imgSource}" class="card-thumbnail" onclick="window.open('${imgSource}')">` : '<div class="card-thumbnail" style="display:flex;align-items:center;justify-content:center;color:gray;"><ion-icon name="image-outline"></ion-icon></div>';
+        
         tr.innerHTML = `
+            <td>${imgHtml}</td>
             <td><strong>${card.code}</strong></td>
             <td><span class="badge ${badgeClass}">${card.brand}</span></td>
             <td>${card.amount} DA</td>
-            <td><ion-icon name="folder-outline"></ion-icon> ${card.packet}</td>
-            <td><ion-icon name="person-outline"></ion-icon> ${card.agent}</td>
+            <td>${card.agent}</td>
             <td>${card.date}</td>
         `;
         cardsTbody.appendChild(tr);
     });
 }
 
-// Search Cards
-searchInput.addEventListener('input', (e) => {
-    renderCards(e.target.value);
+backToFoldersBtn.addEventListener('click', () => {
+    renderFolders();
 });
 
-// Export CSV
-exportCsvBtn.addEventListener('click', () => {
+folderSearch.addEventListener('input', (e) => {
+    renderFolders(e.target.value);
+});
+
+function exportFolderToCsv(folderName) {
+    const filtered = mockCards.filter(c => c.packet === folderName);
     let csvContent = "data:text/csv;charset=utf-8,Code,Brand,Amount,Packet,Agent,Date\n";
-    mockCards.forEach(row => {
+    filtered.forEach(row => {
         csvContent += `${row.code},${row.brand},${row.amount},${row.packet},${row.agent},${row.date}\n`;
     });
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "TobalScan_Export.csv");
+    link.setAttribute("download", `TobalScan_${folderName}.csv`);
     document.body.appendChild(link);
     link.click();
+}
+
+exportFolderCsvBtn.addEventListener('click', () => {
+    if (currentFolder) exportFolderToCsv(currentFolder);
 });
 
-// Export TXT
-exportTxtBtn.addEventListener('click', () => {
-    let txtContent = "data:text/plain;charset=utf-8,";
-    mockCards.forEach(row => {
-        txtContent += `${row.code}\n`;
-    });
-    const encodedUri = encodeURI(txtContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "TobalScan_Codes.txt");
-    document.body.appendChild(link);
-    link.click();
+// Profile Settings Logic
+settingsForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const newName = document.getElementById('new-username').value.trim();
+    const newPin = document.getElementById('new-password').value.trim();
+
+    if (!firebaseDbUrl) return;
+
+    if (newName || newPin) {
+        settingsMsg.textContent = "Mise à jour...";
+        settingsMsg.style.color = "var(--primary)";
+        
+        try {
+            const url = firebaseDbUrl.endsWith('/') ? firebaseDbUrl.slice(0, -1) : firebaseDbUrl;
+            // Update Admin in agents list
+            const updateData = { name: newName || currentUser, pin: newPin || "0000" };
+            const res = await fetch(`${url}/agents/${updateData.name}.json`, {
+                method: 'PUT',
+                body: JSON.stringify(updateData)
+            });
+
+            if (res.ok) {
+                settingsMsg.textContent = "Profil mis à jour avec succès !";
+                currentUser = updateData.name;
+                loggedUserEl.textContent = currentUser;
+                fetchAgents();
+            }
+        } catch (e) {
+            settingsMsg.textContent = "Erreur de mise à jour.";
+            settingsMsg.style.color = "var(--error)";
+        }
+    }
 });
 
 // Render Agents
