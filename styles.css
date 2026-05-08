@@ -420,6 +420,21 @@ tbody tr:hover {
     cursor: zoom-in;
 }
 
+.btn-delete-card {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: 0.3s;
+    padding: 5px;
+    border-radius: 5px;
+}
+.btn-delete-card:hover {
+    color: #FF3B30;
+    background: rgba(255, 59, 48, 0.1);
+}
+
 /* Agents Grid */
 .cards-grid {
     display: grid;

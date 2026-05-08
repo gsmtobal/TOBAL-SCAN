@@ -156,6 +156,9 @@ function renderFolders(filterText = '') {
                 <button class="btn-folder-download txt" title="TXT" data-folder="${folder.name}">
                     <ion-icon name="document-text-outline"></ion-icon>
                 </button>
+                <button class="btn-folder-download delete" title="Supprimer Dossier" style="background: rgba(255, 59, 48, 0.1); color: #FF3B30;">
+                    <ion-icon name="trash-outline"></ion-icon>
+                </button>
             </div>
             <div class="folder-icon"><ion-icon name="folder"></ion-icon></div>
             <div class="folder-info">
@@ -169,6 +172,7 @@ function renderFolders(filterText = '') {
         });
         div.querySelector('.btn-folder-download.csv').addEventListener('click', () => exportFolderToCsv(folder.name));
         div.querySelector('.btn-folder-download.txt').addEventListener('click', () => exportFolderToTxt(folder.name));
+        div.querySelector('.btn-folder-download.delete').addEventListener('click', () => deleteFolder(folder.name));
         foldersGrid.appendChild(div);
     });
 }
@@ -200,6 +204,11 @@ function renderFolderCards(folderName) {
             <td>${card.amount} DA</td>
             <td>${card.agent}</td>
             <td>${card.date}</td>
+            <td style="text-align: right;">
+                <button class="btn-delete-card" onclick="deleteCard('${card.code}')" title="Supprimer">
+                    <ion-icon name="trash-outline"></ion-icon>
+                </button>
+            </td>
         `;
         cardsTbody.appendChild(tr);
     });
@@ -248,6 +257,53 @@ exportFolderCsvBtn.addEventListener('click', () => {
 exportFolderTxtBtn.addEventListener('click', () => {
     if (currentFolder) exportFolderToTxt(currentFolder);
 });
+
+// --- Deletion Logic ---
+async function deleteCard(code) {
+    if (!confirm(`Voulez-vous vraiment supprimer le code ${code} ?`)) return;
+    if (!firebaseDbUrl) return;
+
+    try {
+        const url = firebaseDbUrl.endsWith('/') ? firebaseDbUrl.slice(0, -1) : firebaseDbUrl;
+        const res = await fetch(`${url}/records/${code}.json`, {
+            method: 'DELETE'
+        });
+        if (res.ok) {
+            mockCards = mockCards.filter(c => c.code !== code);
+            if (currentFolder) {
+                renderFolderCards(currentFolder);
+            } else {
+                renderFolders();
+            }
+        }
+    } catch (e) { console.error("Error deleting card:", e); }
+}
+
+async function deleteFolder(folderName) {
+    if (!confirm(`Voulez-vous vraiment supprimer TOUT le dossier "${folderName}" ?`)) return;
+    if (!firebaseDbUrl) return;
+
+    try {
+        const url = firebaseDbUrl.endsWith('/') ? firebaseDbUrl.slice(0, -1) : firebaseDbUrl;
+        const cardsToDelete = mockCards.filter(c => c.packet === folderName);
+        
+        // Firebase doesn't support bulk delete by value, so we map them to null in a single PATCH
+        const patchData = {};
+        cardsToDelete.forEach(c => {
+            patchData[c.code] = null;
+        });
+
+        const res = await fetch(`${url}/records.json`, {
+            method: 'PATCH',
+            body: JSON.stringify(patchData)
+        });
+
+        if (res.ok) {
+            mockCards = mockCards.filter(c => c.packet !== folderName);
+            renderFolders();
+        }
+    } catch (e) { console.error("Error deleting folder:", e); }
+}
 
 // Profile Settings Logic
 settingsForm.addEventListener('submit', async (e) => {
