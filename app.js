@@ -107,15 +107,6 @@ loginForm.addEventListener('submit', (e) => {
     }
 });
 
-// Auto-Login Check
-if (currentUser && firebaseDbUrl) {
-    loggedUserEl.textContent = currentUser;
-    loginScreen.classList.remove('active');
-    dashboardScreen.classList.add('active');
-    fetchCards();
-    fetchAgents();
-}
-
 // Logout Logic
 logoutBtn.addEventListener('click', () => {
     currentUser = null;
@@ -410,3 +401,12 @@ document.getElementById('refresh-btn').addEventListener('click', () => {
 // Initial Render (Hidden until login, but we fetch to have them ready)
 fetchCards();
 fetchAgents();
+
+// Auto-Login Check (Moved to end for stability)
+console.log("Checking session:", { currentUser, firebaseDbUrl });
+if (currentUser && firebaseDbUrl) {
+    loggedUserEl.textContent = currentUser;
+    loginScreen.classList.remove('active');
+    dashboardScreen.classList.add('active');
+    // Data is already being fetched by fetchCards/fetchAgents above
+}
