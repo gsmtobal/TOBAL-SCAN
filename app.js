@@ -487,7 +487,10 @@ function renderSearchResults(results) {
                 ${card.imageBase64 ? `<img src="${card.imageBase64}">` : '<div style="width:250px; height:150px; background:#111; border-radius:15px; display:flex; align-items:center; justify-content:center; color:gray;">Pas d\'image</div>'}
             </div>
             <div class="result-info-side">
-                <h2>Code: ${card.code}</h2>
+                <div class="edit-group" style="margin-bottom: 20px;">
+                    <label>Code de la carte (15 chiffres)</label>
+                    <input type="text" id="edit-code-${card.code}" value="${card.code}" style="font-size: 1.8rem; font-weight: bold; color: var(--primary);">
+                </div>
                 <div class="edit-row">
                     <div class="edit-group">
                         <label>Opérateur</label>
@@ -512,26 +515,56 @@ function renderSearchResults(results) {
     `).join('<hr style="border:0; border-top:1px solid #222; margin:20px 0;">');
 }
 
-async function saveSearchEdit(code) {
-    const brand = document.getElementById(`edit-brand-${code}`).value;
-    const amount = document.getElementById(`edit-amount-${code}`).value;
+async function saveSearchEdit(oldCode) {
+    const newCode = document.getElementById(`edit-code-${oldCode}`).value.trim();
+    const brand = document.getElementById(`edit-brand-${oldCode}`).value;
+    const amount = document.getElementById(`edit-amount-${oldCode}`).value;
     
-    const cardIdx = mockCards.findIndex(c => c.code === code);
+    if (newCode.length !== 15) {
+        alert("Le code doit contenir 15 chiffres.");
+        return;
+    }
+
+    const cardIdx = mockCards.findIndex(c => c.code === oldCode);
     if (cardIdx === -1) return;
 
-    const updatedCard = { ...mockCards[cardIdx], brand, amount };
+    const updatedCard = { ...mockCards[cardIdx], code: newCode, brand, amount };
     
     // Update Firebase
     if (firebaseDbUrl) {
         const url = firebaseDbUrl.endsWith('/') ? firebaseDbUrl.slice(0, -1) : firebaseDbUrl;
-        await fetch(`${url}/records/${code}.json`, {
-            method: 'PATCH',
-            body: JSON.stringify({ brand, amount })
-        });
         
-        mockCards[cardIdx] = updatedCard;
-        alert("Modifications enregistrées !");
-        renderFolders();
+        try {
+            if (newCode !== oldCode) {
+                // 1. Create new entry
+                await fetch(`${url}/records/${newCode}.json`, {
+                    method: 'PUT',
+                    body: JSON.stringify(updatedCard)
+                });
+                // 2. Delete old entry
+                await fetch(`${url}/records/${oldCode}.json`, {
+                    method: 'DELETE'
+                });
+            } else {
+                // Just patch existing
+                await fetch(`${url}/records/${oldCode}.json`, {
+                    method: 'PATCH',
+                    body: JSON.stringify({ brand, amount })
+                });
+            }
+            
+            mockCards[cardIdx] = updatedCard;
+            alert("Modifications enregistrées !");
+            renderFolders();
+            
+            // Clear search to show updated info
+            mainSearchInput.value = '';
+            searchResultsContainer.innerHTML = '';
+            
+        } catch (e) {
+            console.error(e);
+            alert("Erreur lors de la sauvegarde.");
+        }
     }
 }
 
