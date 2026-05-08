@@ -1,16 +1,47 @@
-// Mock Data (To be replaced with actual backend API calls later)
-let mockCards = [
-    { code: "123456789012345", brand: "MOBILIS", amount: "1000", packet: "Lot_1", agent: "Admin", date: "2026-05-08 10:00" },
-    { code: "987654321098765", brand: "OOREDOO", amount: "2000", packet: "Lot_1", agent: "Admin", date: "2026-05-08 10:05" },
-    { code: "111122223333444", brand: "DJEZZY", amount: "500", packet: "Lot_2", agent: "Samir", date: "2026-05-08 11:30" }
-];
-
-let mockAgents = [
-    { name: "Admin", pin: "0000" },
-    { name: "Samir", pin: "1234" }
-];
-
+// Data from Backend
+let mockCards = [];
+let mockAgents = [];
 let currentUser = null;
+let firebaseDbUrl = localStorage.getItem('firebaseUrl') || '';
+
+// Fetch Data from Firebase
+async function fetchCards() {
+    if (!firebaseDbUrl) return;
+    try {
+        const url = firebaseDbUrl.endsWith('/') ? firebaseDbUrl.slice(0, -1) : firebaseDbUrl;
+        const res = await fetch(`${url}/records.json`);
+        if (res.ok) {
+            const data = await res.json();
+            // Firebase returns an object of objects { "code": { ... }, "code2": { ... } }
+            if (data) {
+                mockCards = Object.values(data);
+                // Sort by date descending
+                mockCards.sort((a, b) => new Date(b.date) - new Date(a.date));
+            } else {
+                mockCards = [];
+            }
+            renderCards();
+        }
+    } catch (e) { console.error("Error fetching cards:", e); }
+}
+
+async function fetchAgents() {
+    if (!firebaseDbUrl) return;
+    try {
+        const url = firebaseDbUrl.endsWith('/') ? firebaseDbUrl.slice(0, -1) : firebaseDbUrl;
+        const res = await fetch(`${url}/agents.json`);
+        if (res.ok) {
+            const data = await res.json();
+            if (data) {
+                mockAgents = Object.values(data);
+            } else {
+                // Default agent
+                mockAgents = [{ name: "Admin", pin: "0000" }];
+            }
+            renderAgents();
+        }
+    } catch (e) { console.error("Error fetching agents:", e); }
+}
 
 // DOM Elements
 const loginScreen = document.getElementById('login-screen');
@@ -32,13 +63,26 @@ const exportCsvBtn = document.getElementById('export-csv-btn');
 const exportTxtBtn = document.getElementById('export-txt-btn');
 const loggedUserEl = document.getElementById('logged-user');
 
+// Set default URL if exists
+if (firebaseDbUrl) {
+    document.getElementById('firebase-url').value = firebaseDbUrl;
+}
+
 // Login Logic
 loginForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const username = document.getElementById('username').value.trim();
     const password = document.getElementById('password').value.trim();
+    const dbUrl = document.getElementById('firebase-url').value.trim();
 
-    // Simple mock auth
+    firebaseDbUrl = dbUrl;
+    localStorage.setItem('firebaseUrl', dbUrl);
+
+    // If no agents loaded yet (first login), allow admin/admin
+    if (mockAgents.length === 0) {
+        mockAgents = [{ name: "Admin", pin: "0000" }];
+    }
+
     const agent = mockAgents.find(a => a.name.toLowerCase() === username.toLowerCase() && a.pin === password);
     
     if (agent || (username === 'admin' && password === 'admin')) {
@@ -161,20 +205,39 @@ closeModalBtn.addEventListener('click', () => {
     agentModal.classList.remove('active');
 });
 
-agentForm.addEventListener('submit', (e) => {
+agentForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const name = document.getElementById('agent-name').value.trim();
     const pin = document.getElementById('agent-pin').value.trim();
     
-    if (name && pin) {
-        mockAgents.push({ name, pin });
-        renderAgents();
-        agentModal.classList.remove('active');
-        document.getElementById('agent-name').value = '';
-        document.getElementById('agent-pin').value = '';
+    if (name && pin && firebaseDbUrl) {
+        try {
+            const newAgent = { name, pin };
+            const url = firebaseDbUrl.endsWith('/') ? firebaseDbUrl.slice(0, -1) : firebaseDbUrl;
+            
+            // Generate a unique ID for the agent or use the name
+            const res = await fetch(`${url}/agents/${name}.json`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newAgent)
+            });
+            
+            if (res.ok) {
+                agentModal.classList.remove('active');
+                document.getElementById('agent-name').value = '';
+                document.getElementById('agent-pin').value = '';
+                fetchAgents();
+            }
+        } catch(e) { console.error(e); }
     }
 });
 
-// Initial Render (Hidden until login)
-renderCards();
-renderAgents();
+// Refresh Button
+document.getElementById('refresh-btn').addEventListener('click', () => {
+    fetchCards();
+    fetchAgents();
+});
+
+// Initial Render (Hidden until login, but we fetch to have them ready)
+fetchCards();
+fetchAgents();
