@@ -81,6 +81,7 @@ const imageModal = document.getElementById('image-modal');
 const enlargedImage = document.getElementById('enlarged-image');
 const closeImageModalBtn = document.getElementById('close-image-modal');
 const mainSearchInput = document.getElementById('main-search-input');
+const mainSearchBtn = document.getElementById('main-search-btn');
 const searchResultsContainer = document.getElementById('search-results-container');
 
 let currentFolder = null;
@@ -464,15 +465,23 @@ if (currentUser) {
 }
 
 // --- Enhanced Search Logic ---
-mainSearchInput.addEventListener('input', (e) => {
-    const q = e.target.value.trim();
-    if (q.length < 3) {
+function performSearch() {
+    const q = mainSearchInput.value.trim();
+    if (!q) {
         searchResultsContainer.innerHTML = '';
         return;
     }
     
     const results = mockCards.filter(c => c.code.includes(q));
     renderSearchResults(results);
+}
+
+mainSearchBtn.addEventListener('click', performSearch);
+
+mainSearchInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+        performSearch();
+    }
 });
 
 function renderSearchResults(results) {
@@ -557,9 +566,11 @@ async function saveSearchEdit(oldCode) {
             alert("Modifications enregistrées !");
             renderFolders();
             
-            // Clear search to show updated info
-            mainSearchInput.value = '';
-            searchResultsContainer.innerHTML = '';
+            // Do NOT clear search results anymore. 
+            // If code changed, re-render to update IDs for next edit
+            if (newCode !== oldCode) {
+                renderSearchResults([updatedCard]);
+            }
             
         } catch (e) {
             console.error(e);
