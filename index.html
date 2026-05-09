@@ -3,146 +3,135 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tobal Scan - Self User Portal</title>
+    <title>Tobal Scan Pro</title>
     <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;900&family=Outfit:wght@300;600;900&display=swap" rel="stylesheet">
-    <!-- Ionicons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
 </head>
 <body>
 
-    <!-- LOGIN SCREEN -->
+    <!-- LOGIN -->
     <div id="login-screen" class="screen active">
         <div class="login-card">
-            <div class="logo-container">
-                <h1>Tobal <span class="highlight">Scan</span></h1>
-                <p class="subtitle">Self User Portal</p>
-            </div>
-            
+            <h2>Tobal <span style="color: var(--primary);">Scan</span></h2>
             <form id="login-form">
-                <div class="input-group">
-                    <ion-icon name="person-outline"></ion-icon>
-                    <input type="text" id="username" placeholder="Nom d'utilisateur" required>
-                </div>
-                <div class="input-group">
-                    <ion-icon name="lock-closed-outline"></ion-icon>
-                    <input type="password" id="password" placeholder="Mot de passe" required>
-                </div>
-                <button type="submit" class="btn-primary">SE CONNECTER</button>
-                <div id="login-error" class="error-msg"></div>
+                <input type="text" id="username" class="input-field" placeholder="Identifiant" required>
+                <input type="password" id="password" class="input-field" placeholder="Mot de passe" required>
+                <button type="submit" class="btn-primary">CONNEXION</button>
+                <div id="login-error" class="error-msg" style="color: red; margin-top: 15px; font-size: 0.8rem;"></div>
             </form>
         </div>
     </div>
 
-    <!-- MAIN PORTAL DASHBOARD -->
+    <!-- MAIN DASHBOARD -->
     <div id="dashboard-screen" class="screen">
-        
-        <!-- TOP PORTAL PANEL -->
-        <div id="portal-panel">
-            <div class="close-portal">
-                <ion-icon name="close-outline"></ion-icon>
+        <header>
+            <div class="logo">T-Scan <span style="font-weight: 400; font-size: 0.8rem; opacity: 0.6;">PRO</span></div>
+            <div class="user-status">
+                <span id="logged-user" style="font-weight: bold; font-size: 0.9rem;">Admin</span>
+                <button id="logout-btn" class="btn-logout-small">Quitter</button>
             </div>
+        </header>
+
+        <main class="main-container">
             
-            <div class="portal-header">
-                <h1>Voucher Management</h1>
-                <p>SELF USER PORTAL</p>
-            </div>
+            <!-- HOME VIEW (Grid) -->
+            <section id="home-view" class="view-section active">
+                <div class="hero-title">
+                    <h1>Bonjour, <span id="user-greeting">Utilisateur</span></h1>
+                    <p>Que souhaitez-vous faire aujourd'hui ?</p>
+                </div>
 
-            <div class="portal-menu">
-                <div class="pill-btn active" data-target="folders-view">Dashboard</div>
-                <div class="pill-btn" data-target="search-view">Search</div>
-                <div class="pill-btn">My Orders</div>
-                <div class="pill-btn">My Vouchers</div>
-                <div class="pill-btn" data-target="agents-view">My Packets</div>
-            </div>
+                <div class="action-grid">
+                    <div class="action-card" data-target="folders-view">
+                        <ion-icon name="folder-open"></ion-icon>
+                        <h3>Mes Dossiers</h3>
+                        <span><span id="total-count">0</span> codes</span>
+                    </div>
+                    <div class="action-card" data-target="search-view">
+                        <ion-icon name="search"></ion-icon>
+                        <h3>Rechercher</h3>
+                        <span>Trouver une carte</span>
+                    </div>
+                    <div class="action-card" data-target="agents-view" id="agents-card">
+                        <ion-icon name="people"></ion-icon>
+                        <h3>Agents</h3>
+                        <span>Gestion équipe</span>
+                    </div>
+                    <div class="action-card" data-target="settings-view">
+                        <ion-icon name="settings"></ion-icon>
+                        <h3>Config</h3>
+                        <span>Firebase & Profil</span>
+                    </div>
+                </div>
+            </section>
 
-            <div class="lang-switch">
-                <span class="active">EN</span>
-                <span>ع</span>
-            </div>
-
-            <div class="user-info">
-                <span class="username" id="logged-user">salem</span>
-                <span class="role">SELFUSER</span>
-            </div>
-
-            <button class="btn-logout" id="logout-btn">Logout</button>
-        </div>
-
-        <!-- MAIN CONTENT AREA -->
-        <main class="main-content">
-            
-            <!-- Folders/Dashboard View -->
-            <section id="folders-view" class="view-section active">
-                <h2 class="section-title">My Packets</h2>
-                <p class="section-subtitle">Total: <span id="total-count">0</span> codes collected</p>
-                
+            <!-- FOLDERS VIEW -->
+            <section id="folders-view" class="view-section">
+                <div class="toolbar" style="margin-bottom: 20px; display: flex; align-items: center;">
+                    <button class="btn-back" onclick="showHome()" style="background:none; border:none; cursor:pointer; font-size: 1.5rem; margin-right: 15px;"><ion-icon name="arrow-back"></ion-icon></button>
+                    <h2 style="font-weight: 900;">Mes Dossiers</h2>
+                </div>
                 <div id="folders-container">
-                    <div class="folders-grid" id="folders-grid">
-                        <!-- Folders populated via JS -->
+                    <div class="folders-grid" id="folders-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <!-- Populate via JS -->
                     </div>
                 </div>
 
+                <!-- Folder Details -->
                 <div id="folder-detail-view" style="display: none;">
                     <div class="toolbar" style="margin-bottom: 20px;">
-                        <button class="btn-secondary" id="back-to-folders">
-                            <ion-icon name="arrow-back-outline"></ion-icon> Back
-                        </button>
-                        <h3 id="current-folder-name" style="margin-left: 15px; color: var(--text-dark);">Dossier: ---</h3>
+                        <button class="btn-back" onclick="showFolders()" style="background:none; border:none; cursor:pointer; font-size: 1.5rem; margin-right: 15px;"><ion-icon name="arrow-back"></ion-icon></button>
+                        <h3 id="current-folder-name" style="font-weight: 900;">---</h3>
                     </div>
-                    <div class="table-container">
-                        <table id="cards-table">
-                            <thead>
-                                <tr>
-                                    <th>Image</th>
-                                    <th>Code (15 digits)</th>
-                                    <th>Brand</th>
-                                    <th>Amount</th>
-                                    <th>Date</th>
-                                </tr>
-                            </thead>
-                            <tbody id="cards-tbody">
-                                <!-- Data populated via JS -->
-                            </tbody>
-                        </table>
+                    <div class="records-container" id="cards-tbody">
+                        <!-- Populate via JS -->
                     </div>
                 </div>
             </section>
 
-            <!-- Search View -->
+            <!-- SEARCH VIEW -->
             <section id="search-view" class="view-section">
-                <h2 class="section-title">Search Vouchers</h2>
-                <p class="section-subtitle">Enter one or more codes to find details</p>
-                
-                <div class="search-box-large">
-                    <ion-icon name="search-outline"></ion-icon>
-                    <input type="text" id="main-search-input" placeholder="Enter card code (15 digits)...">
-                    <button id="main-search-btn" class="btn-primary" style="width: auto; padding: 10px 30px;">Search</button>
+                <div class="toolbar" style="margin-bottom: 20px; display: flex; align-items: center;">
+                    <button class="btn-back" onclick="showHome()" style="background:none; border:none; cursor:pointer; font-size: 1.5rem; margin-right: 15px;"><ion-icon name="arrow-back"></ion-icon></button>
+                    <h2 style="font-weight: 900;">Recherche</h2>
                 </div>
-
-                <div id="search-results-container" class="search-results-container" style="margin-top: 30px;">
-                    <!-- Result cards -->
+                <div class="search-hero">
+                    <h3>Recherche de code</h3>
+                    <div class="search-input-group">
+                        <input type="text" id="main-search-input" placeholder="Entrez 15 chiffres...">
+                        <button id="main-search-btn">Trouver</button>
+                    </div>
+                </div>
+                <div id="search-results-container" class="records-container">
+                    <!-- Results here -->
                 </div>
             </section>
 
-            <!-- Agents View (Reused as packets list if needed, or hidden) -->
+            <!-- AGENTS VIEW -->
             <section id="agents-view" class="view-section">
-                <h2 class="section-title">Manage Agents</h2>
-                <div class="cards-grid" id="agents-grid" style="margin-top: 20px;">
-                    <!-- Agents -->
+                <div class="toolbar" style="margin-bottom: 20px; display: flex; align-items: center;">
+                    <button class="btn-back" onclick="showHome()" style="background:none; border:none; cursor:pointer; font-size: 1.5rem; margin-right: 15px;"><ion-icon name="arrow-back"></ion-icon></button>
+                    <h2 style="font-weight: 900;">Gestion Agents</h2>
+                </div>
+                <div id="agents-grid" style="display: flex; flex-direction: column; gap: 10px;">
+                    <!-- Agents here -->
                 </div>
             </section>
 
-            <!-- Settings View (Hidden in this layout or integrated) -->
+            <!-- SETTINGS VIEW -->
             <section id="settings-view" class="view-section">
-                <h2 class="section-title">Settings</h2>
-                <div class="table-container" style="padding: 30px;">
+                <div class="toolbar" style="margin-bottom: 20px; display: flex; align-items: center;">
+                    <button class="btn-back" onclick="showHome()" style="background:none; border:none; cursor:pointer; font-size: 1.5rem; margin-right: 15px;"><ion-icon name="arrow-back"></ion-icon></button>
+                    <h2 style="font-weight: 900;">Configuration</h2>
+                </div>
+                <div class="search-hero" style="text-align: left;">
                     <form id="settings-form">
-                        <div class="input-group">
-                            <input type="text" id="new-firebase-url" placeholder="Firebase URL">
-                        </div>
-                        <button type="submit" class="btn-primary" style="width: auto;">Update Config</button>
+                        <label style="font-size: 0.8rem; font-weight: bold; margin-bottom: 5px; display: block;">Firebase Database URL</label>
+                        <input type="text" id="new-firebase-url" class="input-field" placeholder="https://...">
+                        <button type="submit" class="btn-primary">Mettre à jour</button>
+                        <p id="settings-msg" style="margin-top: 10px; font-size: 0.8rem;"></p>
                     </form>
                 </div>
             </section>
@@ -151,11 +140,8 @@
     </div>
 
     <!-- Modals -->
-    <div id="image-modal" class="modal">
-        <div class="modal-content image-modal-content">
-            <span class="close-modal" id="close-image-modal">&times;</span>
-            <img id="enlarged-image" src="" alt="Card Enlarged">
-        </div>
+    <div id="image-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:1000; justify-content:center; align-items:center;" onclick="this.style.display='none'">
+        <img id="enlarged-image" style="max-width: 90%; max-height: 80%; border-radius: 15px; border: 3px solid white;">
     </div>
 
     <script src="app.js"></script>
