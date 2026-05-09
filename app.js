@@ -1,5 +1,5 @@
 // Firebase Configuration
-const DEFAULT_FIREBASE_URL = "https://tobal-scan-default-rtdb.firebaseio.com/"; // <--- REPLACE WITH YOUR REAL FIREBASE URL
+const DEFAULT_FIREBASE_URL = "https://tobalscandb-default-rtdb.firebaseio.com/"; // <--- Corrected to match app
 
 let mockCards = [];
 let mockAgents = [];
@@ -56,7 +56,7 @@ const loginScreen = document.getElementById('login-screen');
 const dashboardScreen = document.getElementById('dashboard-screen');
 const loginForm = document.getElementById('login-form');
 const loginError = document.getElementById('login-error');
-const navLinks = document.querySelectorAll('.nav-links li[data-target]');
+const navLinks = document.querySelectorAll('.portal-menu .pill-btn[data-target]');
 const viewSections = document.querySelectorAll('.view-section');
 const logoutBtn = document.getElementById('logout-btn');
 const cardsTbody = document.getElementById('cards-tbody');
@@ -144,10 +144,16 @@ navLinks.forEach(link => {
         link.classList.add('active');
         
         const targetId = link.getAttribute('data-target');
+        if (!targetId) return;
+
         viewSections.forEach(sec => sec.classList.remove('active'));
-        document.getElementById(targetId).classList.add('active');
+        const targetSection = document.getElementById(targetId);
+        if (targetSection) targetSection.classList.add('active');
         
-        document.getElementById('page-title').textContent = link.querySelector('span').textContent;
+        if (targetId === 'settings-view') {
+            const urlInput = document.getElementById('new-firebase-url');
+            if (urlInput) urlInput.value = firebaseDbUrl;
+        }
     });
 });
 
@@ -341,28 +347,39 @@ settingsForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const newName = document.getElementById('new-username').value.trim();
     const newPin = document.getElementById('new-password').value.trim();
+    const newUrl = document.getElementById('new-firebase-url').value.trim();
 
-    if (!firebaseDbUrl) return;
-
-    if (newName || newPin) {
+    if (newName || newPin || newUrl) {
         settingsMsg.textContent = "Mise à jour...";
         settingsMsg.style.color = "var(--primary)";
         
         try {
-            const url = firebaseDbUrl.endsWith('/') ? firebaseDbUrl.slice(0, -1) : firebaseDbUrl;
-            // Update Admin in agents list
-            const updateData = { name: newName || currentUser, pin: newPin || "0000" };
-            const res = await fetch(`${url}/agents/${updateData.name}.json`, {
-                method: 'PUT',
-                body: JSON.stringify(updateData)
-            });
-
-            if (res.ok) {
-                settingsMsg.textContent = "Profil mis à jour avec succès !";
-                currentUser = updateData.name;
-                loggedUserEl.textContent = currentUser;
-                fetchAgents();
+            // Update URL in localStorage if provided
+            if (newUrl) {
+                firebaseDbUrl = newUrl.endsWith('/') ? newUrl : newUrl + '/';
+                localStorage.setItem('firebaseUrl', firebaseDbUrl);
             }
+
+            const url = firebaseDbUrl.endsWith('/') ? firebaseDbUrl.slice(0, -1) : firebaseDbUrl;
+            
+            if (newName || newPin) {
+                // Update Admin in agents list
+                const updateData = { name: newName || currentUser, pin: newPin || "0000" };
+                const res = await fetch(`${url}/agents/${updateData.name}.json`, {
+                    method: 'PUT',
+                    body: JSON.stringify(updateData)
+                });
+
+                if (res.ok) {
+                    currentUser = updateData.name;
+                    loggedUserEl.textContent = currentUser;
+                    localStorage.setItem('loggedUser', currentUser);
+                }
+            }
+
+            settingsMsg.textContent = "Profil mis à jour avec succès !";
+            fetchCards();
+            fetchAgents();
         } catch (e) {
             settingsMsg.textContent = "Erreur de mise à jour.";
             settingsMsg.style.color = "var(--error)";
