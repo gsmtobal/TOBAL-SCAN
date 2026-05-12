@@ -3,6 +3,7 @@ const DEFAULT_FIREBASE_URL = "https://tobalscandb-default-rtdb.firebaseio.com/";
 
 let mockCards = [];
 let mockAgents = [];
+let isFetchingCards = false;
 let currentUser = localStorage.getItem('loggedUser') || null;
 let firebaseDbUrl = localStorage.getItem('firebaseUrl') || DEFAULT_FIREBASE_URL;
 
@@ -36,6 +37,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Core Functions ---
     
     async function fetchCards() {
+        if (isFetchingCards) return;
+        isFetchingCards = true;
         try {
             const url = firebaseDbUrl.endsWith('/') ? firebaseDbUrl.slice(0, -1) : firebaseDbUrl;
             // Use Firebase API if URL contains firebaseio, otherwise use local API
@@ -67,6 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderFolders();
             }
         } catch (e) { console.error("Fetch Error:", e); }
+        finally { isFetchingCards = false; }
     }
 
     async function fetchAgents() {
@@ -121,9 +125,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function openFolder(name) {
-        if (!mockCards || mockCards.length === 0) {
-            // Wait for data if called too early
+        if (isFetchingCards) {
+            // Wait for data if still fetching
             setTimeout(() => openFolder(name), 100);
+            return;
+        }
+        
+        if (!mockCards || mockCards.length === 0) {
+            console.log("No cards available to open folder");
+            switchView('folders-view');
             return;
         }
         
