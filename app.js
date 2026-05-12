@@ -38,9 +38,9 @@ document.addEventListener('DOMContentLoaded', () => {
     async function fetchCards() {
         try {
             const url = firebaseDbUrl.endsWith('/') ? firebaseDbUrl.slice(0, -1) : firebaseDbUrl;
-            // Support both Firebase (.json) and Local API
-            const isLocal = url.includes('localhost') || url.includes('127.0.0.1');
-            const fetchUrl = isLocal ? `${url}/cards` : `${url}/records.json`;
+            // Use Firebase API if URL contains firebaseio, otherwise use local API
+            const isFirebase = url.includes('firebaseio.com');
+            const fetchUrl = isFirebase ? `${url}/records.json` : `${url}/api/cards`;
             
             const res = await fetch(fetchUrl);
             if (res.ok) {
@@ -122,16 +122,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function openFolder(name) {
         if (!mockCards || mockCards.length === 0) {
-            // If data isn't ready yet, retry in 100ms
+            // Wait for data if called too early
             setTimeout(() => openFolder(name), 100);
             return;
         }
+        
         switchView('folders-view');
-        if (foldersContainer) foldersContainer.style.display = 'none';
-        if (folderDetailView) folderDetailView.style.display = 'block';
-        if (currentFolderNameEl) currentFolderNameEl.textContent = name;
-        const filtered = mockCards.filter(c => c.packet === name);
-        if (cardsTbody) cardsTbody.innerHTML = filtered.map(c => renderRecordRow(c)).join('');
+        
+        // Ensure detail view is visible and container is hidden
+        setTimeout(() => {
+            if (foldersContainer) foldersContainer.style.display = 'none';
+            if (folderDetailView) folderDetailView.style.display = 'block';
+            if (currentFolderNameEl) currentFolderNameEl.textContent = name;
+            const filtered = mockCards.filter(c => c.packet === name);
+            if (cardsTbody) cardsTbody.innerHTML = filtered.map(c => renderRecordRow(c)).join('');
+            console.log(`Folder "${name}" opened with ${filtered.length} cards`);
+        }, 10);
     }
 
     window.addEventListener('hashchange', router);
@@ -163,11 +169,8 @@ document.addEventListener('DOMContentLoaded', () => {
             div.onclick = (e) => {
                 if (e.target.closest('.folder-delete-btn')) return;
                 const targetHash = `#folder/${encodeURIComponent(f.name)}`;
-                if (window.location.hash === targetHash) {
-                    router(); // Force run if already on this hash
-                } else {
-                    window.location.hash = targetHash;
-                }
+                window.location.hash = targetHash;
+                openFolder(f.name); // Call directly for immediate response
             };
             foldersGrid.appendChild(div);
         });
@@ -307,11 +310,11 @@ document.addEventListener('DOMContentLoaded', () => {
         
         try {
             const url = firebaseDbUrl.endsWith('/') ? firebaseDbUrl.slice(0, -1) : firebaseDbUrl;
-            const isLocal = url.includes('localhost') || url.includes('127.0.0.1');
+            const isFirebase = url.includes('firebaseio.com');
             
             let res;
-            if (isLocal) {
-                res = await fetch(`${url}/cards?code=${code}`, { method: 'DELETE' });
+            if (!isFirebase) {
+                res = await fetch(`${url}/api/cards?code=${code}`, { method: 'DELETE' });
             } else if (fbKey) {
                 res = await fetch(`${url}/records/${fbKey}.json`, { method: 'DELETE' });
             }
@@ -331,10 +334,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const url = firebaseDbUrl.endsWith('/') ? firebaseDbUrl.slice(0, -1) : firebaseDbUrl;
-            const isLocal = url.includes('localhost') || url.includes('127.0.0.1');
+            const isFirebase = url.includes('firebaseio.com');
 
-            if (isLocal) {
-                const res = await fetch(`${url}/packets?name=${encodeURIComponent(name)}`, { method: 'DELETE' });
+            if (!isFirebase) {
+                const res = await fetch(`${url}/api/packets?name=${encodeURIComponent(name)}`, { method: 'DELETE' });
                 if (res.ok) {
                     alert("Dossier supprimé");
                     fetchCards();
