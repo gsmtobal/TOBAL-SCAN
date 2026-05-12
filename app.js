@@ -97,6 +97,40 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // --- Simple Router ---
+    
+    function router() {
+        if (!currentUser) return;
+        
+        const hash = window.location.hash || '#home';
+        
+        if (hash === '#home') {
+            switchView('home-view');
+        } else if (hash === '#folders') {
+            window.showFolders();
+        } else if (hash.startsWith('#folder/')) {
+            const folderName = decodeURIComponent(hash.replace('#folder/', ''));
+            openFolder(folderName);
+        } else if (hash === '#search') {
+            switchView('search-view');
+        } else if (hash === '#agents') {
+            switchView('agents-view');
+        } else if (hash === '#settings') {
+            switchView('settings-view');
+        }
+    }
+
+    function openFolder(name) {
+        switchView('folders-view');
+        foldersContainer.style.display = 'none';
+        folderDetailView.style.display = 'block';
+        currentFolderNameEl.textContent = name;
+        const filtered = mockCards.filter(c => c.packet === name);
+        cardsTbody.innerHTML = filtered.map(c => renderRecordRow(c)).join('');
+    }
+
+    window.addEventListener('hashchange', router);
+
     function renderFolders() {
         if (!foldersGrid) return;
         foldersGrid.innerHTML = '';
@@ -123,11 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             div.onclick = (e) => {
                 if (e.target.closest('.folder-delete-btn')) return;
-                foldersContainer.style.display = 'none';
-                folderDetailView.style.display = 'block';
-                currentFolderNameEl.textContent = f.name;
-                const filtered = mockCards.filter(c => c.packet === f.name);
-                cardsTbody.innerHTML = filtered.map(c => renderRecordRow(c)).join('');
+                window.location.hash = `#folder/${encodeURIComponent(f.name)}`;
             };
             foldersGrid.appendChild(div);
         });
@@ -177,7 +207,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const agentsCard = document.getElementById('agents-card');
         if (agentsCard) agentsCard.style.display = isAdmin ? 'flex' : 'none';
 
-        fetchCards();
+        fetchCards().then(() => router());
         fetchAgents();
     }
 
@@ -216,7 +246,10 @@ document.addEventListener('DOMContentLoaded', () => {
     actionCards.forEach(card => {
         card.addEventListener('click', () => {
             const target = card.getAttribute('data-target');
-            if (target) switchView(target);
+            if (target) {
+                const route = target.replace('-view', '');
+                window.location.hash = route === 'home' ? 'home' : route;
+            }
         });
     });
 
@@ -311,11 +344,11 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Global Home navigation
-    window.showHome = () => switchView('home-view');
+    window.showHome = () => window.location.hash = '#home';
     window.showFolders = () => {
         if (foldersContainer) foldersContainer.style.display = 'block';
         if (folderDetailView) folderDetailView.style.display = 'none';
-        switchView('folders-view');
+        window.location.hash = '#folders';
     };
 
     // Start App
