@@ -151,15 +151,21 @@ document.addEventListener('DOMContentLoaded', () => {
         
         switchView('folders-view');
         
-        // Ensure detail view is visible and container is hidden
-        setTimeout(() => {
-            if (foldersContainer) foldersContainer.style.display = 'none';
-            if (folderDetailView) folderDetailView.style.display = 'block';
-            if (currentFolderNameEl) currentFolderNameEl.textContent = name;
-            const filtered = mockCards.filter(c => c.packet === name);
-            if (cardsTbody) cardsTbody.innerHTML = filtered.map(c => renderRecordRow(c)).join('');
-            console.log(`Folder "${name}" opened with ${filtered.length} cards`);
-        }, 10);
+        // Immediate UI update
+        if (foldersContainer) foldersContainer.style.display = 'none';
+        if (folderDetailView) folderDetailView.style.display = 'block';
+        if (currentFolderNameEl) currentFolderNameEl.textContent = name;
+        
+        // Filter logic must match renderFolders (handling 'Sans Dossier')
+        const filtered = mockCards.filter(c => (c.packet || 'Sans Dossier') === name);
+        if (cardsTbody) {
+            if (filtered.length > 0) {
+                cardsTbody.innerHTML = filtered.map(c => renderRecordRow(c)).join('');
+            } else {
+                cardsTbody.innerHTML = '<p style="padding:20px; text-align:center; color:gray;">Aucun code dans ce dossier</p>';
+            }
+        }
+        console.log(`Folder "${name}" opened with ${filtered.length} cards`);
     }
 
     window.addEventListener('hashchange', router);
