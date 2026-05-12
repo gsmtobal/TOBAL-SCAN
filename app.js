@@ -5,7 +5,19 @@ let mockCards = [];
 let mockAgents = [];
 let isFetchingCards = false;
 let currentUser = localStorage.getItem('loggedUser') || null;
-let firebaseDbUrl = localStorage.getItem('firebaseUrl') || DEFAULT_FIREBASE_URL;
+function cleanFirebaseUrl(url) {
+    if (!url) return DEFAULT_FIREBASE_URL;
+    let cleaned = url.trim();
+    // Fix common copy-paste errors (double https, etc)
+    if (cleaned.includes('https://') && cleaned.lastIndexOf('https://') > 0) {
+        cleaned = cleaned.substring(cleaned.lastIndexOf('https://'));
+    }
+    if (!cleaned.startsWith('http')) cleaned = 'https://' + cleaned;
+    if (!cleaned.endsWith('/')) cleaned += '/';
+    return cleaned;
+}
+
+let firebaseDbUrl = cleanFirebaseUrl(localStorage.getItem('firebaseUrl') || DEFAULT_FIREBASE_URL);
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log("App Initialized");
@@ -292,8 +304,9 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             const val = firebaseInput.value.trim();
             if (val) {
-                firebaseDbUrl = val.endsWith('/') ? val : val + '/';
+                firebaseDbUrl = cleanFirebaseUrl(val);
                 localStorage.setItem('firebaseUrl', firebaseDbUrl);
+                if (firebaseInput) firebaseInput.value = firebaseDbUrl; // Update input field
                 if (settingsMsg) {
                     settingsMsg.textContent = "Mis à jour avec succès !";
                     settingsMsg.style.color = "green";
