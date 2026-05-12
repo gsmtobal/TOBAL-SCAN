@@ -304,22 +304,34 @@
 
         .folder-delete-btn {
             position: absolute;
-            top: 5px;
-            right: 5px;
+            top: 10px;
+            right: 10px;
             color: #ff3b30;
-            background: rgba(255,255,255,0.8);
-            border-radius: 50%;
-            padding: 5px;
-            display: none;
+            background: #fff;
+            border-radius: 12px;
+            padding: 8px;
+            display: flex; /* Always visible */
             z-index: 5;
+            box-shadow: 0 4px 10px rgba(255,59,48,0.2);
+            border: 1px solid rgba(255,59,48,0.1);
+            transition: all 0.2s;
         }
 
-        .action-card:hover .folder-delete-btn {
-            display: flex;
+        .folder-delete-btn:hover {
+            transform: scale(1.1);
+            background: #ff3b30;
+            color: white;
         }
 
         .action-card {
             position: relative;
+            min-height: 140px; /* Taller cards */
+            justify-content: center;
+        }
+
+        .folders-grid {
+            grid-template-columns: 1fr !important; /* Full width for clarity */
+            gap: 15px !important;
         }
     </style>
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
@@ -400,7 +412,7 @@
                     <h2 style="font-weight: 900; font-size: 1.2rem;">Mes Dossiers</h2>
                 </div>
                 <div id="folders-container">
-                    <div class="folders-grid" id="folders-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div class="folders-grid" id="folders-grid" style="display: grid; grid-template-columns: 1fr; gap: 15px;">
                     </div>
                 </div>
 

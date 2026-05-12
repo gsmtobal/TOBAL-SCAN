@@ -116,10 +116,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const isAdmin = currentUser && currentUser.toLowerCase() === 'admin';
             
             div.innerHTML = `
-                ${isAdmin ? `<div class="folder-delete-btn" onclick="window.confirmDeletePacket(event, '${f.name}')"><ion-icon name="trash-outline"></ion-icon></div>` : ''}
-                <ion-icon name="folder" style="font-size: 2rem;"></ion-icon>
-                <div style="font-weight: bold; font-size: 0.9rem; margin-top:5px;">${f.name}</div>
-                <div style="font-size: 0.7rem; color: gray;">${f.count} codes</div>
+                ${isAdmin ? `<div class="folder-delete-btn" onclick="window.confirmDeletePacket(event, '${f.name}')"><ion-icon name="trash-outline" style="font-size: 1.5rem;"></ion-icon></div>` : ''}
+                <ion-icon name="folder" style="font-size: 3.5rem;"></ion-icon>
+                <div style="font-weight: 900; font-size: 1.2rem; margin-top:10px;">${f.name}</div>
+                <div style="font-size: 0.9rem; color: gray;">${f.count} codes total</div>
             `;
             div.onclick = (e) => {
                 if (e.target.closest('.folder-delete-btn')) return;
