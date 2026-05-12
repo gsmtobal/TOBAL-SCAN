@@ -121,12 +121,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function openFolder(name) {
+        if (!mockCards || mockCards.length === 0) {
+            // If data isn't ready yet, retry in 100ms
+            setTimeout(() => openFolder(name), 100);
+            return;
+        }
         switchView('folders-view');
-        foldersContainer.style.display = 'none';
-        folderDetailView.style.display = 'block';
-        currentFolderNameEl.textContent = name;
+        if (foldersContainer) foldersContainer.style.display = 'none';
+        if (folderDetailView) folderDetailView.style.display = 'block';
+        if (currentFolderNameEl) currentFolderNameEl.textContent = name;
         const filtered = mockCards.filter(c => c.packet === name);
-        cardsTbody.innerHTML = filtered.map(c => renderRecordRow(c)).join('');
+        if (cardsTbody) cardsTbody.innerHTML = filtered.map(c => renderRecordRow(c)).join('');
     }
 
     window.addEventListener('hashchange', router);
@@ -157,7 +162,12 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             div.onclick = (e) => {
                 if (e.target.closest('.folder-delete-btn')) return;
-                window.location.hash = `#folder/${encodeURIComponent(f.name)}`;
+                const targetHash = `#folder/${encodeURIComponent(f.name)}`;
+                if (window.location.hash === targetHash) {
+                    router(); // Force run if already on this hash
+                } else {
+                    window.location.hash = targetHash;
+                }
             };
             foldersGrid.appendChild(div);
         });
@@ -344,11 +354,14 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Global Home navigation
-    window.showHome = () => window.location.hash = '#home';
+    window.showHome = () => {
+        window.location.hash = '#home';
+    };
     window.showFolders = () => {
+        window.location.hash = '#folders';
+        // Ensure UI state is reset
         if (foldersContainer) foldersContainer.style.display = 'block';
         if (folderDetailView) folderDetailView.style.display = 'none';
-        window.location.hash = '#folders';
     };
 
     // Start App
