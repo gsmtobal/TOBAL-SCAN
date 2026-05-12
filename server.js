@@ -91,6 +91,42 @@ const server = http.createServer((req, res) => {
         return;
     }
 
+    // API: Delete card
+    if (req.method === 'DELETE' && req.url.startsWith('/api/cards')) {
+        const urlParams = new URL(req.url, `http://${req.headers.host}`);
+        const code = urlParams.searchParams.get('code');
+        if (code) {
+            let currentData = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
+            const initialLength = currentData.length;
+            currentData = currentData.filter(c => c.code !== code);
+            if (currentData.length < initialLength) {
+                fs.writeFileSync(DB_FILE, JSON.stringify(currentData, null, 2));
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                return res.end(JSON.stringify({ success: true }));
+            }
+        }
+        res.writeHead(404);
+        return res.end(JSON.stringify({ error: 'Not found' }));
+    }
+
+    // API: Delete packet (folder)
+    if (req.method === 'DELETE' && req.url.startsWith('/api/packets')) {
+        const urlParams = new URL(req.url, `http://${req.headers.host}`);
+        const name = urlParams.searchParams.get('name');
+        if (name) {
+            let currentData = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
+            const initialLength = currentData.length;
+            currentData = currentData.filter(c => c.packet !== name);
+            if (currentData.length < initialLength) {
+                fs.writeFileSync(DB_FILE, JSON.stringify(currentData, null, 2));
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                return res.end(JSON.stringify({ success: true }));
+            }
+        }
+        res.writeHead(404);
+        return res.end(JSON.stringify({ error: 'Not found' }));
+    }
+
     // STATIC FILE SERVING (Dashboard)
     let filePath = path.join(__dirname, req.url === '/' ? 'index.html' : req.url);
     const extname = String(path.extname(filePath)).toLowerCase();

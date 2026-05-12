@@ -38,15 +38,26 @@ document.addEventListener('DOMContentLoaded', () => {
     async function fetchCards() {
         try {
             const url = firebaseDbUrl.endsWith('/') ? firebaseDbUrl.slice(0, -1) : firebaseDbUrl;
-            const res = await fetch(`${url}/records.json`);
+            // Support both Firebase (.json) and Local API
+            const isLocal = url.includes('localhost') || url.includes('127.0.0.1');
+            const fetchUrl = isLocal ? `${url}/cards` : `${url}/records.json`;
+            
+            const res = await fetch(fetchUrl);
             if (res.ok) {
                 const data = await res.json();
                 if (data) {
-                    let allCards = Object.values(data);
-                    if (currentUser && currentUser.toLowerCase() !== 'admin') {
-                        mockCards = allCards.filter(c => c.agent && c.agent.toLowerCase() === currentUser.toLowerCase());
+                    if (Array.isArray(data)) {
+                        mockCards = data;
                     } else {
-                        mockCards = allCards;
+                        // Firebase format: { "key1": { ... }, "key2": { ... } }
+                        mockCards = Object.keys(data).map(key => ({
+                            ...data[key],
+                            fbKey: key
+                        }));
+                    }
+
+                    if (currentUser && currentUser.toLowerCase() !== 'admin') {
+                        mockCards = mockCards.filter(c => c.agent && c.agent.toLowerCase() === currentUser.toLowerCase());
                     }
                     mockCards.sort((a, b) => new Date(b.date) - new Date(a.date));
                 } else {
@@ -101,12 +112,17 @@ document.addEventListener('DOMContentLoaded', () => {
             div.className = 'action-card';
             div.style.padding = '20px';
             div.style.borderRadius = '18px';
+            
+            const isAdmin = currentUser && currentUser.toLowerCase() === 'admin';
+            
             div.innerHTML = `
+                ${isAdmin ? `<div class="folder-delete-btn" onclick="window.confirmDeletePacket(event, '${f.name}')"><ion-icon name="trash-outline"></ion-icon></div>` : ''}
                 <ion-icon name="folder" style="font-size: 2rem;"></ion-icon>
                 <div style="font-weight: bold; font-size: 0.9rem; margin-top:5px;">${f.name}</div>
                 <div style="font-size: 0.7rem; color: gray;">${f.count} codes</div>
             `;
-            div.onclick = () => {
+            div.onclick = (e) => {
+                if (e.target.closest('.folder-delete-btn')) return;
                 foldersContainer.style.display = 'none';
                 folderDetailView.style.display = 'block';
                 currentFolderNameEl.textContent = f.name;
@@ -119,6 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderRecordRow(c) {
         const imgSource = c.imageBase64 || '';
+        const isAdmin = currentUser && currentUser.toLowerCase() === 'admin';
         return `
             <div class="record-row">
                 ${imgSource ? `<img src="${imgSource}" onclick="window.openImageModal('${imgSource}')">` : '<div style="width:60px; height:40px; background:#eee; border-radius:8px; display:flex; align-items:center; justify-content:center;"><ion-icon name="image-outline" style="color:#ccc"></ion-icon></div>'}
@@ -126,6 +143,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="record-code">${c.code}</div>
                     <div class="record-meta">${c.brand || 'MOBILIS'} • ${c.amount || '0'} DA • ${c.date || ''}</div>
                 </div>
+                ${isAdmin ? `
+                    <div class="btn-delete" onclick="window.confirmDeleteCard('${c.fbKey || ''}', '${c.code}')">
+                        <ion-icon name="trash-outline"></ion-icon>
+                    </div>
+                ` : ''}
                 <ion-icon name="chevron-forward-outline" style="color: #ccc;"></ion-icon>
             </div>
         `;
@@ -233,6 +255,59 @@ document.addEventListener('DOMContentLoaded', () => {
             img.src = src;
             modal.style.display = 'flex';
         }
+    };
+
+    // --- Deletion Logic ---
+
+    window.confirmDeleteCard = async (fbKey, code) => {
+        if (!confirm(`Voulez-vous vraiment supprimer le code ${code} ?`)) return;
+        
+        try {
+            const url = firebaseDbUrl.endsWith('/') ? firebaseDbUrl.slice(0, -1) : firebaseDbUrl;
+            const isLocal = url.includes('localhost') || url.includes('127.0.0.1');
+            
+            let res;
+            if (isLocal) {
+                res = await fetch(`${url}/cards?code=${code}`, { method: 'DELETE' });
+            } else if (fbKey) {
+                res = await fetch(`${url}/records/${fbKey}.json`, { method: 'DELETE' });
+            }
+
+            if (res && res.ok) {
+                alert("Supprimé avec succès");
+                fetchCards();
+            } else {
+                alert("Erreur lors de la suppression");
+            }
+        } catch (e) { console.error(e); }
+    };
+
+    window.confirmDeletePacket = async (event, name) => {
+        event.stopPropagation();
+        if (!confirm(`Voulez-vous supprimer tout le dossier "${name}" (${mockCards.filter(c => c.packet === name).length} codes) ?`)) return;
+
+        try {
+            const url = firebaseDbUrl.endsWith('/') ? firebaseDbUrl.slice(0, -1) : firebaseDbUrl;
+            const isLocal = url.includes('localhost') || url.includes('127.0.0.1');
+
+            if (isLocal) {
+                const res = await fetch(`${url}/packets?name=${encodeURIComponent(name)}`, { method: 'DELETE' });
+                if (res.ok) {
+                    alert("Dossier supprimé");
+                    fetchCards();
+                }
+            } else {
+                // Firebase: delete cards one by one (or filtered if structure allowed, but REST DELETE is by key)
+                const toDelete = mockCards.filter(c => c.packet === name);
+                for (const c of toDelete) {
+                    if (c.fbKey) {
+                        await fetch(`${url}/records/${c.fbKey}.json`, { method: 'DELETE' });
+                    }
+                }
+                alert("Dossier supprimé");
+                fetchCards();
+            }
+        } catch (e) { console.error(e); }
     };
 
     // Global Home navigation
