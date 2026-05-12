@@ -123,6 +123,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (hash === '#home') {
             switchView('home-view');
         } else if (hash === '#folders') {
+            switchView('folders-view');
             window.showFolders();
         } else if (hash.startsWith('#folder/')) {
             const folderName = decodeURIComponent(hash.replace('#folder/', ''));
