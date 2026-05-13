@@ -275,13 +275,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             const agent = mockAgents.find(a => a.name.toLowerCase() === u.toLowerCase() && a.pin === p);
-                if (agent) {
-                    currentUser = agent.name;
-                    localStorage.setItem('loggedUser', currentUser);
-                    showDashboard();
-                } else {
-                    if (loginError) loginError.textContent = "Identifiants incorrects";
-                }
+            if (agent) {
+                currentUser = agent.name;
+                localStorage.setItem('loggedUser', currentUser);
+                showDashboard();
+            } else {
+                if (loginError) loginError.textContent = "Identifiants incorrects";
             }
         });
     }
