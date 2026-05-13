@@ -1,0 +1,17 @@
+{
+  "name": "Tobal Scan",
+  "short_name": "TobalScan",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#f0f2f5",
+  "theme_color": "#007AFF",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

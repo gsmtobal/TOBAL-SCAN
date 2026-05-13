@@ -27,6 +27,13 @@ let firebaseDbUrl = isLocal && !storedUrl ? LOCAL_SERVER_URL : cleanFirebaseUrl(
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log("App Initialized");
+
+    // Register Service Worker for PWA
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js')
+            .then(reg => console.log('SW Registered', reg))
+            .catch(err => console.log('SW Error', err));
+    }
     
     // DOM Elements
     const loginScreen = document.getElementById('login-screen');
