@@ -1,14 +1,18 @@
 // Firebase Configuration
 const DEFAULT_FIREBASE_URL = "https://tobalscandb-default-rtdb.firebaseio.com/";
 
+// Auto-detect local server
+const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.startsWith('192.168.');
+const LOCAL_SERVER_URL = isLocal ? `http://${window.location.hostname}:5000/` : "http://localhost:5000/";
+
 let mockCards = [];
 let mockAgents = [];
 let isFetchingCards = false;
 let currentUser = localStorage.getItem('loggedUser') || null;
+
 function cleanFirebaseUrl(url) {
     if (!url) return DEFAULT_FIREBASE_URL;
     let cleaned = url.trim();
-    // Fix common copy-paste errors (double https, etc)
     if (cleaned.includes('https://') && cleaned.lastIndexOf('https://') > 0) {
         cleaned = cleaned.substring(cleaned.lastIndexOf('https://'));
     }
@@ -17,7 +21,9 @@ function cleanFirebaseUrl(url) {
     return cleaned;
 }
 
-let firebaseDbUrl = cleanFirebaseUrl(localStorage.getItem('firebaseUrl') || DEFAULT_FIREBASE_URL);
+// If on local, default to local server instead of a placeholder Firebase
+let storedUrl = localStorage.getItem('firebaseUrl');
+let firebaseDbUrl = isLocal && !storedUrl ? LOCAL_SERVER_URL : cleanFirebaseUrl(storedUrl || DEFAULT_FIREBASE_URL);
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log("App Initialized");
@@ -265,8 +271,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentUser = 'Admin';
                 localStorage.setItem('loggedUser', currentUser);
                 showDashboard();
-            } else {
-                const agent = mockAgents.find(a => a.name.toLowerCase() === u.toLowerCase() && a.pin === p);
+                return; // Stop here
+            }
+            
+            const agent = mockAgents.find(a => a.name.toLowerCase() === u.toLowerCase() && a.pin === p);
                 if (agent) {
                     currentUser = agent.name;
                     localStorage.setItem('loggedUser', currentUser);
