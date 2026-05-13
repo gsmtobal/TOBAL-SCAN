@@ -221,22 +221,33 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderRecordRow(c) {
         const imgSource = c.imageBase64 || '';
         const isAdmin = currentUser && currentUser.toLowerCase() === 'admin';
+        const escapedCode = (c.code || '').replace(/'/g, "\\'");
+        const escapedFbKey = (c.fbKey || '').replace(/'/g, "\\'");
         return `
-            <div class="record-row">
-                ${imgSource ? `<img src="${imgSource}" onclick="window.openImageModal('${imgSource}')">` : '<div style="width:60px; height:40px; background:#eee; border-radius:8px; display:flex; align-items:center; justify-content:center;"><ion-icon name="image-outline" style="color:#ccc"></ion-icon></div>'}
-                <div class="record-info">
-                    <div class="record-code">${c.code}</div>
-                    <div class="record-meta">${c.brand || 'MOBILIS'} • ${c.amount || '0'} DA • ${c.date || ''}</div>
-                </div>
-                ${isAdmin ? `
-                    <div class="btn-delete" onclick="window.confirmDeleteCard('${c.fbKey || ''}', '${c.code}')">
-                        <ion-icon name="trash-outline"></ion-icon>
+            <div class="record-card" id="card-${escapedCode}">
+                <div class="record-card-header">
+                    <div class="record-info">
+                        <div class="record-code" id="code-display-${escapedCode}">${c.code}</div>
+                        <div class="record-meta">${c.brand || 'MOBILIS'} • ${c.amount || '0'} DA • ${c.date || ''}</div>
                     </div>
-                ` : ''}
-                <ion-icon name="chevron-forward-outline" style="color: #ccc;"></ion-icon>
+                    <div class="record-actions">
+                        ${isAdmin ? `
+                            <button class="btn-action btn-edit" onclick="window.editCode('${escapedCode}')" title="تعديل">
+                                <ion-icon name="create-outline" style="font-size:1.3rem;"></ion-icon>
+                            </button>
+                            <button class="btn-action btn-delete" onclick="window.confirmDeleteCard('${escapedFbKey}', '${escapedCode}')" title="حذف">
+                                <ion-icon name="trash-outline" style="font-size:1.3rem;"></ion-icon>
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+                <div class="record-card-image">
+                    ${imgSource ? `<img src="${imgSource}" onclick="window.openImageModal('${imgSource}')">` : '<div class="no-image-placeholder"><ion-icon name="image-outline"></ion-icon></div>'}
+                </div>
             </div>
         `;
     }
+
 
     function renderAgents() {
         if (!agentsGrid) return;
@@ -344,6 +355,84 @@ document.addEventListener('DOMContentLoaded', () => {
         if (modal && img) {
             img.src = src;
             modal.style.display = 'flex';
+        }
+    };
+
+    // --- Edit Code Logic ---
+    window.editCode = (oldCode) => {
+        const codeEl = document.getElementById(`code-display-${oldCode}`);
+        if (!codeEl) return;
+        
+        const currentCode = codeEl.textContent;
+        codeEl.innerHTML = `
+            <input type="text" class="record-code-input" id="code-input-${oldCode}" value="${currentCode}">
+        `;
+        
+        // Replace edit button with save button
+        const card = codeEl.closest('.record-card');
+        const editBtn = card.querySelector('.btn-edit');
+        if (editBtn) {
+            editBtn.className = 'btn-action btn-save';
+            editBtn.setAttribute('onclick', `window.saveCode('${oldCode}')`);
+            editBtn.innerHTML = '<ion-icon name="checkmark-outline" style="font-size:1.3rem;"></ion-icon>';
+            editBtn.title = 'حفظ';
+        }
+        
+        // Focus input
+        const input = document.getElementById(`code-input-${oldCode}`);
+        if (input) {
+            input.focus();
+            input.select();
+            // Allow save on Enter
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') window.saveCode(oldCode);
+            });
+        }
+    };
+
+    window.saveCode = async (oldCode) => {
+        const input = document.getElementById(`code-input-${oldCode}`);
+        if (!input) return;
+        
+        const newCode = input.value.trim();
+        if (!newCode) {
+            alert('الكود لا يمكن أن يكون فارغاً');
+            return;
+        }
+        if (newCode === oldCode) {
+            // No change, just restore display
+            fetchCards();
+            return;
+        }
+
+        try {
+            const url = firebaseDbUrl.endsWith('/') ? firebaseDbUrl.slice(0, -1) : firebaseDbUrl;
+            const isFirebase = url.includes('firebaseio.com');
+            
+            const card = mockCards.find(c => c.code === oldCode);
+            if (!card) return;
+
+            if (isFirebase && card.fbKey) {
+                // Update in Firebase
+                await fetch(`${url}/records/${card.fbKey}/code.json`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newCode)
+                });
+            } else if (!isFirebase) {
+                // Update on local server
+                await fetch(`${url}/api/cards/update`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ oldCode, newCode })
+                });
+            }
+            
+            alert('تم تعديل الكود بنجاح');
+            fetchCards();
+        } catch (e) {
+            console.error('Edit Error:', e);
+            alert('حدث خطأ أثناء التعديل');
         }
     };
 
