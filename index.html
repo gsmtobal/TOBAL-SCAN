@@ -438,6 +438,9 @@
             grid-template-columns: 1fr !important; /* Full width for clarity */
             gap: 15px !important;
         }
+        
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .spin { animation: spin 1s linear infinite; display: inline-block; }
     </style>
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
@@ -488,7 +491,7 @@
                     <div class="action-card" data-target="folders-view">
                         <ion-icon name="folder-open"></ion-icon>
                         <h3>Dossiers</h3>
-                        <span><span id="total-count">0</span> codes</span>
+                        <span><span id="total-count"><ion-icon name="sync" class="spin"></ion-icon></span> codes</span>
                     </div>
                     <div class="action-card" data-target="search-view">
                         <ion-icon name="search"></ion-icon>

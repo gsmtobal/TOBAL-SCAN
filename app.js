@@ -10,6 +10,44 @@ let mockAgents = [];
 let isFetchingCards = false;
 let currentUser = localStorage.getItem('loggedUser') || null;
 
+// --- IndexedDB Cache ---
+const DB_NAME = 'TobalScanDB';
+const STORE_NAME = 'cardsCache';
+
+function initDB() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, 1);
+        request.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains(STORE_NAME)) {
+                db.createObjectStore(STORE_NAME);
+            }
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+async function saveToCache(data) {
+    try {
+        const db = await initDB();
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        tx.objectStore(STORE_NAME).put(data, 'mockCards');
+    } catch (e) { console.error("Cache save error", e); }
+}
+
+async function loadFromCache() {
+    try {
+        const db = await initDB();
+        return new Promise((resolve) => {
+            const tx = db.transaction(STORE_NAME, 'readonly');
+            const req = tx.objectStore(STORE_NAME).get('mockCards');
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => resolve(null);
+        });
+    } catch (e) { return null; }
+}
+
 function cleanFirebaseUrl(url) {
     if (!url) return DEFAULT_FIREBASE_URL;
     let cleaned = url.trim();
@@ -64,6 +102,22 @@ document.addEventListener('DOMContentLoaded', () => {
     async function fetchCards() {
         if (isFetchingCards) return;
         isFetchingCards = true;
+
+        if (mockCards.length === 0) {
+            const cachedData = await loadFromCache();
+            if (cachedData && cachedData.length > 0) {
+                mockCards = cachedData;
+                if (currentUser && currentUser.toLowerCase() !== 'admin') {
+                    mockCards = mockCards.filter(c => c.agent && c.agent.toLowerCase() === currentUser.toLowerCase());
+                }
+                if (totalCountEl) totalCountEl.textContent = mockCards.length;
+                renderFolders();
+            } else {
+                if (totalCountEl) totalCountEl.innerHTML = '<ion-icon name="sync" class="spin"></ion-icon>';
+                if (foldersGrid) foldersGrid.innerHTML = '<div style="text-align:center; padding: 30px; color: gray;"><ion-icon name="sync" class="spin" style="font-size: 2.5rem;"></ion-icon><p style="margin-top: 10px; font-weight: bold;">جاري تحميل البيانات من الخادم...</p></div>';
+            }
+        }
+
         try {
             const url = firebaseDbUrl.endsWith('/') ? firebaseDbUrl.slice(0, -1) : firebaseDbUrl;
             // Use Firebase API if URL contains firebaseio, otherwise use local API
@@ -73,28 +127,44 @@ document.addEventListener('DOMContentLoaded', () => {
             const res = await fetch(fetchUrl);
             if (res.ok) {
                 const data = await res.json();
+                let newCards = [];
                 if (data) {
                     if (Array.isArray(data)) {
-                        mockCards = data;
+                        newCards = data;
                     } else {
                         // Firebase format: { "key1": { ... }, "key2": { ... } }
-                        mockCards = Object.keys(data).map(key => ({
+                        newCards = Object.keys(data).map(key => ({
                             ...data[key],
                             fbKey: key
                         }));
                     }
-
-                    if (currentUser && currentUser.toLowerCase() !== 'admin') {
-                        mockCards = mockCards.filter(c => c.agent && c.agent.toLowerCase() === currentUser.toLowerCase());
-                    }
-                    mockCards.sort((a, b) => new Date(b.date) - new Date(a.date));
-                } else {
-                    mockCards = [];
+                    newCards.sort((a, b) => new Date(b.date) - new Date(a.date));
                 }
+                
+                // Save to IndexedDB Cache
+                saveToCache(newCards);
+
+                if (currentUser && currentUser.toLowerCase() !== 'admin') {
+                    newCards = newCards.filter(c => c.agent && c.agent.toLowerCase() === currentUser.toLowerCase());
+                }
+                
+                mockCards = newCards;
                 if (totalCountEl) totalCountEl.textContent = mockCards.length;
                 renderFolders();
+                
+                // Auto refresh opened folder
+                if (folderDetailView && folderDetailView.style.display === 'block') {
+                    const currentFolder = currentFolderNameEl ? currentFolderNameEl.textContent : null;
+                    if (currentFolder) openFolder(currentFolder, true);
+                }
             }
-        } catch (e) { console.error("Fetch Error:", e); }
+        } catch (e) { 
+            console.error("Fetch Error:", e);
+            if (mockCards.length === 0 && totalCountEl) {
+                totalCountEl.textContent = "Erreur";
+                if (foldersGrid) foldersGrid.innerHTML = '<div style="text-align:center; color: red;">فشل الاتصال بقاعدة البيانات</div>';
+            }
+        }
         finally { isFetchingCards = false; }
     }
 
@@ -150,8 +220,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function openFolder(name) {
-        if (isFetchingCards) {
+    function openFolder(name, silentUpdate = false) {
+        if (isFetchingCards && !silentUpdate) {
             // Wait for data if still fetching
             setTimeout(() => openFolder(name), 100);
             return;
@@ -159,16 +229,17 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (!mockCards || mockCards.length === 0) {
             console.log("No cards available to open folder");
-            switchView('folders-view');
+            if (!silentUpdate) switchView('folders-view');
             return;
         }
         
-        switchView('folders-view');
-        
-        // Immediate UI update
-        if (foldersContainer) foldersContainer.style.display = 'none';
-        if (folderDetailView) folderDetailView.style.display = 'block';
-        if (currentFolderNameEl) currentFolderNameEl.textContent = name;
+        if (!silentUpdate) {
+            switchView('folders-view');
+            // Immediate UI update
+            if (foldersContainer) foldersContainer.style.display = 'none';
+            if (folderDetailView) folderDetailView.style.display = 'block';
+            if (currentFolderNameEl) currentFolderNameEl.textContent = name;
+        }
         
         const isAdmin = currentUser && currentUser.toLowerCase() === 'admin';
         const verifyBtn = document.getElementById('verify-folder-btn');
