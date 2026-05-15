@@ -194,125 +194,159 @@
         }
 
         .records-container {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 20px;
         }
 
         .record-card {
             background: white;
-            border-radius: 18px;
+            border-radius: 20px;
             overflow: hidden;
-            box-shadow: var(--shadow);
-            border: 1px solid var(--border);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.04);
+            border: 1px solid rgba(0,0,0,0.08);
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .record-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 25px rgba(0,0,0,0.08);
         }
 
         .record-card-header {
-            padding: 15px 18px;
+            flex: 1;
+            padding: 20px;
             display: flex;
-            align-items: center;
-            justify-content: space-between;
+            flex-direction: column;
             gap: 10px;
         }
 
         .record-info {
             flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
         }
 
         .record-code {
-            font-weight: 800;
-            font-size: 1.1rem;
-            letter-spacing: 1px;
+            font-weight: 900;
+            font-size: 1.25rem;
+            letter-spacing: 2px;
             font-family: 'Courier New', monospace;
-            color: var(--text-dark);
+            color: var(--primary);
+            background: rgba(0, 122, 255, 0.1);
+            padding: 8px 12px;
+            border-radius: 12px;
+            display: inline-block;
+            text-align: center;
         }
 
         .record-code-input {
-            font-weight: 800;
-            font-size: 1.1rem;
-            letter-spacing: 1px;
+            font-weight: 900;
+            font-size: 1.2rem;
+            letter-spacing: 2px;
             font-family: 'Courier New', monospace;
             border: 2px solid var(--primary);
-            border-radius: 10px;
-            padding: 8px 12px;
+            border-radius: 12px;
+            padding: 8px;
             width: 100%;
             outline: none;
-            background: #f0f5ff;
+            background: white;
+            color: var(--primary);
+            text-align: center;
         }
 
         .record-meta {
-            font-size: 0.78rem;
+            font-size: 0.85rem;
             color: var(--text-muted);
-            margin-top: 4px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
 
         .record-actions {
             display: flex;
-            gap: 6px;
+            gap: 8px;
+            margin-top: 5px;
         }
 
         .btn-action {
             cursor: pointer;
-            padding: 8px;
+            padding: 10px;
             border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
             transition: all 0.2s;
             border: none;
-            background: none;
+            background: #f2f2f7;
         }
 
         .btn-edit {
             color: var(--primary);
         }
         .btn-edit:hover {
-            background: rgba(0, 122, 255, 0.1);
+            background: var(--primary);
+            color: white;
         }
 
         .btn-save {
-            color: #00C853;
+            color: white;
+            background: #00C853;
         }
         .btn-save:hover {
-            background: rgba(0, 200, 83, 0.1);
+            background: #009624;
         }
 
         .btn-delete {
             color: #ff3b30;
         }
         .btn-delete:hover {
-            background: rgba(255, 59, 48, 0.1);
+            background: #ff3b30;
+            color: white;
         }
 
         .record-card-image {
-            width: 100%;
-            padding: 0 15px 15px;
+            width: 140px;
+            min-width: 140px;
+            height: 100%;
+            min-height: 140px;
+            padding: 15px 15px 15px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .record-card-image img {
             width: 100%;
-            max-height: 200px;
-            object-fit: contain;
-            border-radius: 12px;
+            height: 110px;
+            object-fit: cover;
+            border-radius: 14px;
             background: #f8f8f8;
             cursor: pointer;
             transition: transform 0.2s;
+            border: 1px solid rgba(0,0,0,0.05);
         }
 
         .record-card-image img:hover {
-            transform: scale(1.02);
+            transform: scale(1.05);
         }
 
         .no-image-placeholder {
             width: 100%;
-            height: 80px;
+            height: 110px;
             background: #f2f2f7;
-            border-radius: 12px;
+            border-radius: 14px;
             display: flex;
             align-items: center;
             justify-content: center;
             color: #ccc;
-            font-size: 1.5rem;
+            font-size: 2rem;
+            border: 1px dashed #ccc;
         }
 
         /* Login */
@@ -525,16 +559,21 @@
                 </div>
 
                 <div id="folder-detail-view" style="display: none;">
-                    <div class="toolbar" style="justify-content: space-between; width: 100%;">
+                    <div class="toolbar" style="justify-content: space-between; width: 100%; flex-wrap: wrap; gap: 10px;">
                         <div style="display: flex; align-items: center;">
                             <button class="btn-back" onclick="window.showFolders()">
                                 <ion-icon name="arrow-back"></ion-icon>
                             </button>
                             <h3 id="current-folder-name" style="font-weight: 900; font-size: 1.1rem;">---</h3>
                         </div>
-                        <button id="verify-folder-btn" class="btn-primary" style="width: auto; padding: 8px 15px; font-size: 0.85rem; display: none; align-items: center; gap: 5px; background: #00C853;" onclick="window.startFolderVerification()">
-                            <ion-icon name="checkmark-done-outline" style="font-size: 1.2rem;"></ion-icon> مراجعة ومطابقة
-                        </button>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <button id="export-text-btn" class="btn-primary" style="width: auto; padding: 8px 15px; font-size: 0.85rem; display: flex; align-items: center; gap: 5px; background: var(--primary);" onclick="window.exportFolderToText()">
+                                <ion-icon name="document-text-outline" style="font-size: 1.2rem;"></ion-icon> تحميل Text
+                            </button>
+                            <button id="verify-folder-btn" class="btn-primary" style="width: auto; padding: 8px 15px; font-size: 0.85rem; display: none; align-items: center; gap: 5px; background: #00C853;" onclick="window.startFolderVerification()">
+                                <ion-icon name="checkmark-done-outline" style="font-size: 1.2rem;"></ion-icon> مراجعة ومطابقة
+                            </button>
+                        </div>
                     </div>
                     <div class="records-container" id="cards-tbody">
                     </div>

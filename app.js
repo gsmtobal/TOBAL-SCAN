@@ -513,6 +513,35 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // --- Export Logic ---
+    window.exportFolderToText = () => {
+        const folderName = document.getElementById('current-folder-name').textContent;
+        const folderCards = mockCards.filter(c => (c.packet || 'Sans Dossier') === folderName);
+        
+        if (folderCards.length === 0) {
+            alert("لا توجد أكواد للتحميل");
+            return;
+        }
+        
+        let textContent = `Dossier: ${folderName}\n`;
+        textContent += `Total: ${folderCards.length} codes\n`;
+        textContent += `-------------------\n\n`;
+        
+        folderCards.forEach(c => {
+            if (c.code) textContent += `${c.code}\n`;
+        });
+        
+        const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Codes_${folderName.replace(/\s+/g, '_')}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
     // --- Verification Flow ---
     let verifyQueue = [];
     let verifyIndex = 0;
