@@ -170,6 +170,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (folderDetailView) folderDetailView.style.display = 'block';
         if (currentFolderNameEl) currentFolderNameEl.textContent = name;
         
+        const isAdmin = currentUser && currentUser.toLowerCase() === 'admin';
+        const verifyBtn = document.getElementById('verify-folder-btn');
+        if (verifyBtn) {
+            verifyBtn.style.display = isAdmin ? 'flex' : 'none';
+        }
+        
         // Filter logic must match renderFolders (handling 'Sans Dossier')
         const filtered = mockCards.filter(c => (c.packet || 'Sans Dossier') === name);
         if (cardsTbody) {
@@ -434,6 +440,117 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Edit Error:', e);
             alert('حدث خطأ أثناء التعديل');
         }
+    };
+
+    // --- Verification Flow ---
+    let verifyQueue = [];
+    let verifyIndex = 0;
+
+    window.startFolderVerification = () => {
+        const folderName = document.getElementById('current-folder-name').textContent;
+        verifyQueue = mockCards.filter(c => (c.packet || 'Sans Dossier') === folderName);
+        
+        if (verifyQueue.length === 0) {
+            alert("لا توجد أكواد للمراجعة");
+            return;
+        }
+        
+        verifyIndex = 0;
+        document.getElementById('verification-modal').style.display = 'flex';
+        renderVerifyStep();
+    };
+
+    window.closeVerification = () => {
+        document.getElementById('verification-modal').style.display = 'none';
+        fetchCards(); // Refresh UI in case of edits
+    };
+
+    function renderVerifyStep() {
+        if (verifyIndex >= verifyQueue.length) {
+            alert("✅ تمت مراجعة جميع الأكواد بنجاح!");
+            window.closeVerification();
+            return;
+        }
+
+        const card = verifyQueue[verifyIndex];
+        document.getElementById('verify-progress').textContent = `${verifyIndex + 1} / ${verifyQueue.length}`;
+        
+        const imgEl = document.getElementById('verify-image');
+        const noImgEl = document.getElementById('verify-no-image');
+        
+        if (card.imageBase64) {
+            imgEl.src = card.imageBase64;
+            imgEl.style.display = 'inline-block';
+            noImgEl.style.display = 'none';
+        } else {
+            imgEl.style.display = 'none';
+            noImgEl.style.display = 'block';
+        }
+
+        const inputEl = document.getElementById('verify-code-input');
+        inputEl.value = card.code || '';
+        inputEl.style.borderColor = '#333';
+        inputEl.style.color = 'white';
+        inputEl.focus();
+        
+        // Remove old listeners to avoid duplicates
+        const newEl = inputEl.cloneNode(true);
+        inputEl.parentNode.replaceChild(newEl, inputEl);
+        
+        newEl.addEventListener('input', function() {
+            this.style.borderColor = '#ff9500';
+            this.style.color = '#ff9500';
+        });
+        
+        newEl.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') window.nextVerify();
+        });
+    }
+
+    window.nextVerify = async () => {
+        const card = verifyQueue[verifyIndex];
+        const inputEl = document.getElementById('verify-code-input');
+        const newCode = inputEl.value.trim();
+        
+        if (!newCode) {
+            alert("الكود لا يمكن أن يكون فارغاً!");
+            return;
+        }
+
+        // Disable button temporarily
+        const btn = document.querySelector('#verification-modal button[onclick="window.nextVerify()"]');
+        if (btn) btn.disabled = true;
+
+        if (newCode !== card.code) {
+            try {
+                const url = firebaseDbUrl.endsWith('/') ? firebaseDbUrl.slice(0, -1) : firebaseDbUrl;
+                const isFirebase = url.includes('firebaseio.com');
+                
+                if (isFirebase && card.fbKey) {
+                    await fetch(`${url}/records/${card.fbKey}/code.json`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(newCode)
+                    });
+                } else if (!isFirebase) {
+                    await fetch(`${url}/api/cards/update`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ oldCode: card.code, newCode })
+                    });
+                }
+                card.code = newCode;
+            } catch (e) {
+                console.error("Failed to save correction:", e);
+                alert("فشل في حفظ التعديل، الرجاء المحاولة مرة أخرى.");
+                if (btn) btn.disabled = false;
+                return;
+            }
+        }
+
+        if (btn) btn.disabled = false;
+        verifyIndex++;
+        renderVerifyStep();
     };
 
     // --- Deletion Logic ---

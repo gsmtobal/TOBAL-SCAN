@@ -522,11 +522,16 @@
                 </div>
 
                 <div id="folder-detail-view" style="display: none;">
-                    <div class="toolbar">
-                        <button class="btn-back" onclick="window.showFolders()">
-                            <ion-icon name="arrow-back"></ion-icon>
+                    <div class="toolbar" style="justify-content: space-between; width: 100%;">
+                        <div style="display: flex; align-items: center;">
+                            <button class="btn-back" onclick="window.showFolders()">
+                                <ion-icon name="arrow-back"></ion-icon>
+                            </button>
+                            <h3 id="current-folder-name" style="font-weight: 900; font-size: 1.1rem;">---</h3>
+                        </div>
+                        <button id="verify-folder-btn" class="btn-primary" style="width: auto; padding: 8px 15px; font-size: 0.85rem; display: none; align-items: center; gap: 5px; background: #00C853;" onclick="window.startFolderVerification()">
+                            <ion-icon name="checkmark-done-outline" style="font-size: 1.2rem;"></ion-icon> مراجعة ومطابقة
                         </button>
-                        <h3 id="current-folder-name" style="font-weight: 900; font-size: 1.1rem;">---</h3>
                     </div>
                     <div class="records-container" id="cards-tbody">
                     </div>
@@ -588,6 +593,34 @@
     <!-- Modal Image -->
     <div id="image-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:1000; justify-content:center; align-items:center;" onclick="this.style.display='none'">
         <img id="enlarged-image" style="max-width: 95%; max-height: 85%; border-radius: 10px; border: 2px solid white;">
+    </div>
+
+    <!-- Verification Modal -->
+    <div id="verification-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:2000; flex-direction:column; justify-content:space-between; align-items:center; padding: 20px;">
+        <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; color: white; padding: 10px;">
+            <h3 id="verify-progress" style="font-family: monospace; font-size: 1.2rem; background: #333; padding: 5px 15px; border-radius: 20px;">1 / 10</h3>
+            <button onclick="window.closeVerification()" style="background: none; border: none; color: #ff3b30; font-size: 2.5rem; cursor: pointer; display: flex;"><ion-icon name="close-circle"></ion-icon></button>
+        </div>
+
+        <div style="flex: 1; width: 100%; max-width: 500px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 20px;">
+            <div id="verify-image-container" style="width: 100%; text-align: center; background: #1c1c1e; padding: 15px; border-radius: 20px;">
+                <p style="color: #8e8e93; font-size: 0.85rem; margin-bottom: 10px;">صورة البطاقة</p>
+                <img id="verify-image" src="" style="max-width: 100%; max-height: 35vh; border-radius: 12px; border: 2px solid #00C853; box-shadow: 0 10px 20px rgba(0,200,83,0.2);">
+                <div id="verify-no-image" style="display:none; color: #ff3b30; padding: 20px;">لا توجد صورة متوفرة لهذا الكود</div>
+            </div>
+            
+            <div style="width: 100%; background: #1c1c1e; padding: 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                <label style="color: #8e8e93; font-size: 0.85rem; margin-bottom: 10px; display: block; text-align: center;">تأكد من مطابقة الكود وتصحيحه إن لزم الأمر</label>
+                <input type="text" id="verify-code-input" style="width: 100%; background: #000; border: 2px solid #333; color: white; font-size: 2rem; font-family: 'Courier New', monospace; font-weight: 900; text-align: center; padding: 15px; border-radius: 15px; outline: none; letter-spacing: 3px; transition: border-color 0.3s;">
+                
+                <div style="display: flex; gap: 15px; margin-top: 25px;">
+                    <button onclick="window.nextVerify()" style="flex: 1; background: #007AFF; color: white; border: none; padding: 18px; border-radius: 15px; font-size: 1.2rem; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 10px;">
+                        تأكيد والمرور للتالي <ion-icon name="arrow-forward"></ion-icon>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div style="height: 20px;"></div>
     </div>
 
     <script src="app.js"></script>
